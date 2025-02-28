@@ -1,6 +1,6 @@
 {
   "name": "omnirequest",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "description": "A modern cross-platform API client for browsers, Node.js, Bun, Deno, and more.",
