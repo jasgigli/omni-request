@@ -17,12 +17,14 @@ omni-request/
 │   │       ├── headers.ts
 │   │       ├── url.ts
 │   │       └── serialization.ts
+│   │       └── offlineDB.ts
 │   ├── middleware/                # Pluggable middleware components
 │   │   ├── cache.ts               # LRU caching with localStorage support
 │   │   ├── retry.ts               # Intelligent retry logic with exponential backoff
 │   │   ├── timeout.ts             # Default timeout middleware
 │   │   ├── transform.ts           # Request/response transformation
 │   │   └── index.ts               # Aggregator for middleware exports
+│   │   └── revalidationCache.ts
 │   ├── plugins/                   # Optional plugins to extend functionality
 │   │   ├── auth.ts                # Authentication plugin (supports token refresh)
 │   │   ├── rateLimit.ts           # Rate limiting using a token bucket algorithm

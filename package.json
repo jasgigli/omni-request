@@ -4,11 +4,17 @@
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "description": "A modern cross-platform API client for browsers, Node.js, Bun, Deno, and more.",
-  "keywords": ["api", "request", "cross-platform", "javascript", "typescript"],
+  "keywords": [
+    "api",
+    "request",
+    "cross-platform",
+    "javascript",
+    "typescript"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jasgigli/omni-request.git"   
+    "url": "https://github.com/jasgigli/omni-request.git"
   },
   "peerDependencies": {
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
@@ -27,7 +33,8 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "react": "^18.0.0"
+    "idb": "^8.0.2",
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
   },
   "files": [
     "dist/",
