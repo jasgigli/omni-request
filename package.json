@@ -1,0 +1,27 @@
+{
+  "name": "omnirequest",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@rollup/plugin-json": "^6.1.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.5",
+    "@types/react": "^18.0.0",
+    "eslint": "^9.21.0",
+    "rollup": "^4.34.8",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  }
+}

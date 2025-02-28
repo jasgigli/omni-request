@@ -1,0 +1,56 @@
+omni-request/
+├── dist/                          # Compiled output (bundled library)
+├── src/
+│   ├── adapters/                  # Environment‑specific adapters
+│   │   ├── browserAdapter.ts      # Uses fetch/AbortController for browsers
+│   │   ├── nodeAdapter.ts         # Uses Node.js http/https modules
+│   │   ├── bunAdapter.ts          # Optimized adapter for Bun (leverages native fetch)
+│   │   ├── denoAdapter.ts         # Adapter for Deno (uses its built‑in fetch)
+│   │   └── index.ts               # Adapter selector (auto‑detects environment)
+│   ├── core/                      # Core request handling and pipeline
+│   │   ├── requestClient.ts       # Main client with middleware and interceptors
+│   │   ├── interceptors/          # Request & response interceptors
+│   │   │   ├── requestInterceptor.ts
+│   │   │   ├── responseInterceptor.ts
+│   │   │   └── index.ts
+│   │   └── utils/                 # Utility functions (headers, URL, serialization)
+│   │       ├── headers.ts
+│   │       ├── url.ts
+│   │       └── serialization.ts
+│   ├── middleware/                # Pluggable middleware components
+│   │   ├── cache.ts               # LRU caching with localStorage support
+│   │   ├── retry.ts               # Intelligent retry logic with exponential backoff
+│   │   ├── timeout.ts             # Default timeout middleware
+│   │   ├── transform.ts           # Request/response transformation
+│   │   └── index.ts               # Aggregator for middleware exports
+│   ├── plugins/                   # Optional plugins to extend functionality
+│   │   ├── auth.ts                # Authentication plugin (supports token refresh)
+│   │   ├── rateLimit.ts           # Rate limiting using a token bucket algorithm
+│   │   ├── logging.ts             # Logging plugin for debugging & analytics
+│   │   └── reactHooks.ts          # React hook integration (e.g. useOmniRequest)
+│   │   └── index.ts 
+│   ├── integrations/              # Framework‑specific integration utilities
+│   │   ├── nextjs.ts             # Next.js utilities (e.g. server‑side data fetching)
+│   │   └── react.tsx             # Additional React integration helpers
+│   │   └── index.ts 
+│   ├── types/                     # TypeScript types for requests, responses, errors, etc.
+│   │   ├── request.ts
+│   │   ├── response.ts
+│   │   ├── middleware.ts
+│   │   └── error.ts
+│   │   └── index.ts 
+│   └── index.ts                   # Main entry point (re‑exports core functionality)
+│   └── globals.d.ts
+├── examples/                      # Usage examples for various environments
+│   ├── browser/
+│   ├── node/
+│   ├── nextjs/
+│   ├── react/
+│   └── deno/
+├── package.json                   # Package metadata and scripts
+├── tsconfig.json                  # TypeScript configuration
+├── rollup.config.cjs               # Bundler configuration
+├── .npmignore                     # Files to exclude from npm package
+└── README.md                      # Documentation
+└── .gitignore
+└── LICENCE
