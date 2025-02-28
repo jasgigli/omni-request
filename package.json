@@ -1,6 +1,6 @@
 {
   "name": "omnirequest",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "type": "module",
@@ -29,5 +29,10 @@
   },
   "dependencies": {
     "react": "^18.0.0"
-  }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }

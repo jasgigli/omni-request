@@ -8,12 +8,4 @@ import * as Types from "./types";
 
 export { RequestClient, Adapters, Middleware, Plugins, Integrations, Types };
 
-// Also export a default object so consumers can import everything at once.
-export default {
-  RequestClient,
-  Adapters,
-  Middleware,
-  Plugins,
-  Integrations,
-  Types,
-};
+
