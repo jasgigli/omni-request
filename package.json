@@ -1,16 +1,22 @@
 {
   "name": "omnirequest",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "type": "module",
+  "description": "A modern cross-platform API client for browsers, Node.js, Bun, Deno, and more.",
+  "keywords": ["api", "request", "cross-platform", "javascript", "typescript"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jasgigli/omni-request.git"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
+  },
   "scripts": {
     "build": "rollup -c"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@rollup/plugin-json": "^6.1.0",
     "@types/jest": "^29.5.14",

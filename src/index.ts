@@ -1,7 +1,19 @@
 // src/index.ts
-export { default as RequestClient } from "./core/requestClient";
-export * from "./adapters";
-export * from "./middleware";
-export * from "./plugins";
-export * from "./integrations";
-export * from "./types";
+import RequestClient from "./core/requestClient";
+import * as Adapters from "./adapters";
+import * as Middleware from "./middleware";
+import * as Plugins from "./plugins";
+import * as Integrations from "./integrations";
+import * as Types from "./types";
+
+export { RequestClient, Adapters, Middleware, Plugins, Integrations, Types };
+
+// Also export a default object so consumers can import everything at once.
+export default {
+  RequestClient,
+  Adapters,
+  Middleware,
+  Plugins,
+  Integrations,
+  Types,
+};
