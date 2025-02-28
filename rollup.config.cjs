@@ -17,7 +17,7 @@ module.exports = {
       sourcemap: true,
     },
   ],
-  plugins: [json(), typescript({ tsconfig: "./tsconfig.json" })],
+  plugins: [json(), typescript({ tsconfig: "./tsconfig.json",clean: true, })],
   external: [
     ...Object.keys(pkg.dependencies || {}),
     "http",

@@ -8,6 +8,10 @@ examples/
 rollup.config.cjs
 tsconfig.json
 .gitignore
+.txt
+LICENCE
+.md
+omni
 
 # But DO NOT ignore dist!
 # If you have a line like `dist/`, remove it or comment it out.
