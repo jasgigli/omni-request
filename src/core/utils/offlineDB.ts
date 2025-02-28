@@ -1,16 +1,23 @@
 // src/core/utils/offlineDB.ts
+import { openDB, IDBPDatabase } from "idb";
 import { CacheEntry } from "../../middleware/revalidationCache";
 
+/**
+ * Check if we're in a browser environment.
+ */
 export function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.document !== "undefined";
 }
 
+/**
+ * Check if indexedDB is available (i.e., not in Node).
+ */
 export function isIndexedDBAvailable(): boolean {
   return isBrowser() && "indexedDB" in window;
 }
 
 /**
- * Store offline data in IndexedDB under a "omniRequestCache" object store.
+ * Store offline data in IndexedDB under "omniRequestCache".
  */
 export async function storeOfflineData(key: string, entry: CacheEntry): Promise<void> {
   try {
@@ -43,18 +50,22 @@ export async function getOfflineData(key: string): Promise<CacheEntry | undefine
 }
 
 /**
- * Open the "omniRequestCacheDB" IndexedDB database (version 1).
- * Creates an object store named "omniRequestCache" if not exist.
+ * Interface describing our object stores.
  */
-async function openCacheDB(): Promise<IDBPDatabase<unknown>> {
-  const db = await import("idb").then(idb => {
-    return idb.openDB("omniRequestCacheDB", 1, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("omniRequestCache")) {
-          db.createObjectStore("omniRequestCache");
-        }
+interface OmniRequestDB {
+  omniRequestCache: CacheEntry;
+}
+
+/**
+ * Open the "omniRequestCacheDB" IndexedDB database (version 1).
+ * Creates an object store named "omniRequestCache" if not existing.
+ */
+async function openCacheDB(): Promise<IDBPDatabase<OmniRequestDB>> {
+  return openDB<OmniRequestDB>("omniRequestCacheDB", 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains("omniRequestCache")) {
+        db.createObjectStore("omniRequestCache");
       }
-    });
+    }
   });
-  return db;
 }
