@@ -1,192 +1,147 @@
-## 1. Advanced Caching & Revalidation
-
-- **ETag / Last-Modified Support:**  
-  Automatically handle conditional requests (`If-None-Match`, `If-Modified-Since`) to revalidate cached responses without refetching.
-- **Cache Invalidation & Revalidation Hooks:**  
-  Provide hooks for developers to customize cache expiry, partial revalidation, or offline caching logic.
-- **Offline-First Mode:**  
-  Store responses in a local database (e.g., IndexedDB) and serve them offline.
-
-**Why It’s Advanced:**  
-`fetch` offers no built-in caching logic (beyond the browser’s default). `axios` doesn’t have advanced revalidation or offline caching out of the box.
+Below is a **summary of which advanced features your OmniRequest library currently has** (based on the code you’ve added) and **which additional features** might be the most impactful for solving real-world developer pain points going forward.
 
 ---
 
-## 2. Intelligent Retry & Circuit Breakers
+## 1. **Features Already in Your Library**
 
-- **Exponential Backoff with Jitter:**  
-  Avoid “retry storms” by adding random jitter to backoff intervals.
-- **Circuit Breaker Patterns:**  
-  Temporarily stop requests to a failing endpoint after multiple errors, then try again after a cooldown.
-- **Granular Retry Conditions:**  
-  Let developers define custom logic (e.g., retry on network errors or 5xx, but not on 4xx).
+### A. Advanced Caching & Revalidation
 
-**Why It’s Advanced:**  
-`fetch` has no built-in retry mechanism, and `axios` only has simple interceptors—no built-in circuit breaker or jitter.
+- **ETag / Last-Modified Support**:  
+  Via the `RevalidationCacheMiddleware`, you handle conditional requests (`If-None-Match`, `If-Modified-Since`) and can serve cached responses if the server replies `304 Not Modified`.
 
----
+- **Cache Invalidation & Revalidation Hooks**:  
+  Hooks like `onStore` and `onOffline` let developers customize how they handle storing or returning data from the cache.
 
-## 3. Concurrency Control & Rate Limiting
+- **Offline-First Mode**:  
+  In a browser, data can be stored in IndexedDB for offline usage. This is especially helpful for unreliable networks or offline apps.
 
-- **Global or Endpoint-Level Concurrency Limits:**  
-  Let developers cap how many requests are in-flight to a particular endpoint or globally at once.
-- **Token Bucket / Leaky Bucket Algorithms:**  
-  Smooth out bursts of requests, ensuring APIs are not overloaded.
-- **Queueing & Priority:**  
-  Requests can be queued if concurrency is reached, with higher-priority requests jumping the queue.
+### B. Concurrency Control & Rate Limiting
 
-**Why It’s Advanced:**  
-Neither `fetch` nor `axios` natively handle concurrency limits or advanced rate-limiting strategies.
+- **Global or Endpoint-Level Concurrency Limits**:  
+  The `ConcurrencyRateLimitMiddleware` allows a max number of in-flight requests globally or per endpoint.
 
----
+- **Token Bucket Algorithm**:  
+  Developers can specify a token bucket to smooth out bursts, automatically refilling tokens at a defined rate.
 
-## 4. Custom Instrumentation & Tracing
+- **Queueing & Priority**:  
+  If concurrency or tokens are unavailable, requests can queue. A `priorityFn` can reorder queued requests, letting critical requests jump ahead.
 
-- **OpenTelemetry or Custom Tracing Hooks:**  
-  Expose hooks so developers can measure request latency, attach trace IDs, or integrate with logging/tracing systems.
-- **Performance Metrics:**  
-  Provide built-in metrics for average response times, request counts, error rates, etc.
+### C. Intelligent Retry & Circuit Breakers
 
-**Why It’s Advanced:**  
-`fetch` doesn’t offer instrumentation hooks. `axios` can be intercepted, but typically requires extra libraries for robust tracing.
+- **Exponential Backoff with Jitter**:  
+  The `IntelligentRetryMiddleware` calculates exponential backoff and can add random jitter to avoid “thundering herd” problems.
+
+- **Circuit Breaker Patterns**:  
+  After multiple consecutive failures, the circuit opens and fails fast. After a cooldown, it half-opens to test the endpoint again.
+
+- **Granular Retry Conditions**:  
+  Developers can define which errors or status codes trigger a retry (e.g., network errors or 5xx but not 4xx).
 
 ---
 
-## 5. Extended Plugin / Middleware System
+## 2. **Features You Might Add Next**
 
-- **Dynamic Loading of Plugins:**  
-  Allow plugins (for logging, caching, authentication) to be added or removed at runtime.
-- **Middleware Composition:**  
-  Let developers reorder or selectively apply middleware on a per-request basis, e.g. for specialized endpoints.
-- **Chaining / Pipeline Patterns:**  
-  A more powerful system than typical interceptors, enabling before/after transformations with easy debugging.
+Below are some of the **most impactful** remaining features that can further differentiate your library and solve real-world developer challenges.
 
-**Why It’s Advanced:**  
-`fetch` has no concept of middleware. `axios` interceptors are simpler and less flexible than a fully composable pipeline.
+### A. **Custom Instrumentation & Tracing**
 
----
+1. **OpenTelemetry or Custom Tracing Hooks**  
+   - Let developers attach trace IDs, measure request latency, or integrate with logging/tracing systems.  
+   - This helps large apps or microservices monitor performance and pinpoint slow endpoints.
 
-## 6. Automatic Auth & Token Refresh
+2. **Performance Metrics**  
+   - Provide built-in metrics (avg response time, request counts, error rates).  
+   - Expose them via events or a built-in aggregator so devs can easily observe how the library is performing.
 
-- **Built-in OAuth2 / JWT Handling:**  
-  Provide a standard flow for refreshing tokens when expired, optionally storing them securely.
-- **Multiple Auth Strategies:**  
-  Basic, Bearer, custom headers, or cookie-based.  
-- **Credential Storage & Rotation:**  
-  Securely store tokens (in memory or local storage) with automatic rotation upon expiration.
-
-**Why It’s Advanced:**  
-Neither `fetch` nor `axios` has built-in token refresh or multi-strategy auth flows. They rely on manual interceptor code.
+**Why It’s Important:**  
+Modern production apps rely heavily on metrics and observability to ensure reliability, especially in microservice or distributed systems.
 
 ---
 
-## 7. Configurable Data Transformation
+### B. **Extended Plugin / Middleware System**
 
-- **Built-in JSON -> Class Conversion:**  
-  Let developers define TypeScript classes or schemas for automatic parsing and validation.
-- **GraphQL or JSON:API Support:**  
-  Provide specialized data transformations for these protocols, including error handling.
-- **Bidirectional Serialization:**  
-  For example, automatically convert request payloads to `FormData` or JSON, then parse the response into typed objects.
+1. **Dynamic Loading of Plugins**  
+   - Let developers add or remove plugins at runtime (e.g., for logging, caching, authentication).  
+2. **Middleware Composition**  
+   - Let them reorder or selectively apply middleware on a per-request basis.  
+3. **Chaining / Pipeline Patterns**  
+   - Provide a more powerful system than typical interceptors, with before/after transformations and debugging tools.
 
-**Why It’s Advanced:**  
-`fetch` only offers raw methods like `response.json()`, and `axios` has simple transformRequest/transformResponse arrays, but lacks typed conversion or GraphQL/JSON:API convenience.
-
----
-
-## 8. File Upload & Progress Reporting
-
-- **Multi-Part FormData:**  
-  Built-in support for easily creating multi-part requests (including boundary management) for large file uploads.
-- **Progress Callbacks:**  
-  Provide granular upload/download progress events in both Node.js and browsers (e.g., using streams in Node, `onUploadProgress` in the browser).
-
-**Why It’s Advanced:**  
-`fetch` progress events require manual streaming in the browser. `axios` has some progress support, but Node streaming is more limited.
+**Why It’s Important:**  
+Your library already uses a middleware approach, but adding more dynamic composition (e.g., apply a custom plugin only for certain routes) can address advanced use cases and keep the library flexible.
 
 ---
 
-## 9. WebSocket / SSE Integration
+### C. **Automatic Auth & Token Refresh**
 
-- **Real-Time Transport:**  
-  Provide a unified interface for WebSocket or Server-Sent Events connections, including reconnection logic.
-- **Push-Based Middleware:**  
-  Similar to HTTP middleware, let developers transform inbound/outbound messages.
+1. **Built-in OAuth2 / JWT**  
+   - Standard flows for refreshing tokens automatically.  
+2. **Multiple Auth Strategies**  
+   - Basic, Bearer, or custom headers.  
+3. **Credential Storage & Rotation**  
+   - Securely store tokens, automatically rotate them upon expiration.
 
-**Why It’s Advanced:**  
-`fetch` doesn’t handle real-time protocols. `axios` is purely HTTP-based. A library that merges real-time with standard HTTP can be quite powerful.
-
----
-
-## 10. Advanced Error Categorization & Handling
-
-- **Error Categories:**  
-  Differentiate network errors, timeout errors, HTTP status errors, or application-level errors with typed classes.
-- **Automatic Fallbacks:**  
-  Let developers define fallback logic (e.g., if the first endpoint fails, try a second).
-- **Localized / User-Friendly Messages:**  
-  Optionally transform error objects into localized messages or structured logs.
-
-**Why It’s Advanced:**  
-`fetch` simply throws on network errors. `axios` lumps most errors into a single shape. Detailed typed errors can be very helpful in large apps.
+**Why It’s Important:**  
+Many developers face the hassle of implementing token refresh logic repeatedly. Providing a robust built-in solution saves time and prevents errors.
 
 ---
 
-## 11. Built-In Telemetry & Analytics Hooks
+### D. **Customizable Data Transformation**
 
-- **Request & Response Events:**  
-  Fire events (or pass them to a callback) whenever a request starts, ends, fails, etc.
-- **Metrics Dashboard (Optional):**  
-  Potentially track usage stats in memory or integrate with a logging system to view request patterns.
+1. **JSON -> Class Conversion**  
+   - Integrate with TypeScript classes or schemas (like Zod/JOI) to auto-validate responses.  
+2. **GraphQL or JSON:API Support**  
+   - Provide specialized data transformations for these protocols, including error handling.  
+3. **Bidirectional Serialization**  
+   - Convert request payloads to `FormData` or JSON, parse responses into typed objects.
 
-**Why It’s Advanced:**  
-`fetch` has no built-in analytics hooks. `axios` can do some logging via interceptors but lacks an official analytics solution.
-
----
-
-## 12. Environment Auto-Detection & Polyfills
-
-- **Seamless Browser/Node/Bun/Deno Detection:**  
-  Already partially in OmniRequest, but you can add more robust detection logic or fallback polyfills (e.g., if `fetch` is unavailable).
-- **Optional Polyfills for Legacy Browsers:**  
-  Offer a “compat” build that includes polyfills for older environments.
-
-**Why It’s Advanced:**  
-`fetch` is built into modern browsers and Node 18+, but older environments need polyfills. `axios` is cross-platform but requires manual polyfills for some features.
+**Why It’s Important:**  
+Many teams want a typed, validated approach for their request/response data, especially in TypeScript-based projects. This can reduce runtime errors and improve developer productivity.
 
 ---
 
-## 13. Advanced Stream Support
+### E. **File Upload & Progress Reporting**
 
-- **Browser ReadableStream:**  
-  Provide easy ways to consume large files or chunked data in the browser, possibly piping it to a user callback or a file writer.
-- **Node Stream Integration:**  
-  For large downloads, pipe data to a file system stream or process it in chunks.
+1. **Multi-Part FormData**  
+   - Built-in support for large file uploads, boundary management.  
+2. **Progress Callbacks**  
+   - In Node, use streams; in the browser, use `onUploadProgress`.  
+   - Developers can show progress bars or handle partial uploads gracefully.
 
-**Why It’s Advanced:**  
-`fetch` supports streaming in the browser but requires manual handling. `axios` can handle streams in Node but is not as flexible.
-
----
-
-## 14. Plugin for SSR & Serverless
-
-- **SSR Caching & Reuse:**  
-  Provide a plugin to store request results in memory for a single SSR pass, preventing duplicate fetches.
-- **Serverless Performance Hooks:**  
-  Auto-measure cold starts, log request times, or integrate with serverless logs.
-
-**Why It’s Advanced:**  
-This is specialized for SSR frameworks like Next.js or serverless deployments—`fetch`/`axios` don’t natively handle SSR caching or performance hooks.
+**Why It’s Important:**  
+File uploads are common. Native `fetch` requires manual streaming, and `axios` has partial progress support, but not for Node streaming. Offering a robust solution helps dev teams building large upload flows.
 
 ---
 
-## 15. Full Customization of Retry / Timeout per Request
+### F. **Advanced Error Categorization & Handling**
 
-- **Per-Request Timeouts & Retries:**  
-  Let developers override global settings on a per-request basis (e.g., a longer timeout for large file uploads).
-- **Timeout Strategies:**  
-  Soft timeouts (warn but continue) vs. hard timeouts (cancel the request).
+1. **Error Categories**  
+   - Distinguish network errors, timeouts, 4xx, 5xx, circuit-breaker rejections, etc.  
+2. **Fallback Logic**  
+   - If the primary endpoint fails, automatically try a secondary endpoint.  
+3. **Localized / User-Friendly Messages**  
+   - Let devs easily transform error objects into user-facing messages or logs.
 
-**Why It’s Advanced:**  
-While `axios` does allow request-specific configs, more advanced strategies (like soft/hard timeouts or partial retry logic) are not typical.
+**Why It’s Important:**  
+Large apps need more nuance in error handling. Categorizing errors helps developers log, alert, or recover from them properly.
 
+---
+
+## 3. **Summary & Recommendations**
+
+Your OmniRequest library already has **three major advanced features**:
+
+1. **Advanced Caching & Revalidation**  
+2. **Concurrency Control & Rate Limiting**  
+3. **Intelligent Retry & Circuit Breakers**
+
+This already puts you far ahead of `fetch` and `axios` in solving common performance and reliability challenges. To further address **real-world developer pain points**, consider adding:
+
+- **Instrumentation & Tracing**: Observability is crucial in modern systems.  
+- **Dynamic Plugin System**: More flexible composition of middleware.  
+- **Automatic Auth**: Commonly needed in enterprise apps (OAuth2, JWT refresh).  
+- **Data Transformation**: Simplifies typed, validated request/response handling.  
+- **File Upload & Progress**: Another frequent pain point in real-world apps.  
+- **Advanced Error Handling**: Offer fallback endpoints, typed error categories, user-friendly messages.
+
+By focusing on these additional features, you’ll cover an even broader range of real-world scenarios, making OmniRequest a truly comprehensive, enterprise-grade HTTP client solution.

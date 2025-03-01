@@ -25,12 +25,15 @@ omni-request/
 │   │   ├── transform.ts           # Request/response transformation
 │   │   └── index.ts               # Aggregator for middleware exports
 │   │   └── revalidationCache.ts
+│   │   └── concurrencyRateLimit.ts
+│   │   └── intelligentRetry.ts
 │   ├── plugins/                   # Optional plugins to extend functionality
 │   │   ├── auth.ts                # Authentication plugin (supports token refresh)
 │   │   ├── rateLimit.ts           # Rate limiting using a token bucket algorithm
 │   │   ├── logging.ts             # Logging plugin for debugging & analytics
 │   │   └── reactHooks.ts          # React hook integration (e.g. useOmniRequest)
 │   │   └── index.ts 
+│   │   └── autoAuth.ts
 │   ├── integrations/              # Framework‑specific integration utilities
 │   │   ├── nextjs.ts             # Next.js utilities (e.g. server‑side data fetching)
 │   │   └── react.tsx             # Additional React integration helpers
