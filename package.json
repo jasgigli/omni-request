@@ -1,20 +1,50 @@
 {
   "name": "omnirequest",
   "version": "1.0.9",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "description": "A modern cross-platform API client for browsers, Node.js, Bun, Deno, and more.",
+  "type": "module",
+  "description": "A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.",
   "keywords": [
+    "node.js",
+    "http",
+    "client",
+    "fetch",
+    "axios",
+    "typescript",
     "api",
     "request",
     "cross-platform",
-    "javascript",
-    "typescript"
+    "caching",
+    "retry",
+    "circuit-breaker",
+    "token refresh",
+    "advanced http client"
   ],
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/jasgigli/omni-request.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jasgigli/omni-request/issues",
+    "email": "your-email@example.com"
+  },
+  "homepage": "https://github.com/jasgigli/omni-request",
+  "author": {
+    "name": "Junaid Ali Shah Gigli",
+    "email": "overview.jjj@gmail.com",
+    "url": "https://jasgiigli.blogspot.com/"
+  },
+  "contributors": [
+    {
+      "name": "Junaid Ali Shah Gigli",
+      "email": "overview.jjj@gmail.com"
+    }
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/jasgigli"
   },
   "peerDependencies": {
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
