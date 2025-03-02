@@ -1,15 +1,58 @@
-# OmniRequest
+# OmniRequest &mdash; The Ultimate Node.js HTTP Client with Advanced Middleware
 
-[![NPM Version](https://img.shields.io/npm/v/omnirequest.svg)](https://www.npmjs.com/package/omnirequest)  
-[![License](https://img.shields.io/npm/l/omnirequest.svg)](LICENSE)
+<!-- Core Project Badges -->
 
-OmniRequest is a **modern Node.js HTTP client** built with a **powerful middleware architecture**. It goes beyond standard HTTP libraries like `fetch` or `axios` by offering **advanced caching & revalidation**, **concurrency & rate limiting**, **intelligent retry & circuit breakers**, **auto‑auth**, and more. Whether you’re building microservices, CLI tools, or large enterprise applications in Node.js, OmniRequest provides a flexible, pluggable solution to real‑world HTTP challenges.
+[![npm version](https://img.shields.io/npm/v/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
+[![license](https://img.shields.io/npm/l/omnirequest.svg?color=blue)](LICENSE)
+[![node](https://img.shields.io/node/v/omnirequest.svg?color=informational)](https://www.npmjs.com/package/omnirequest)
+[![Type definitions](https://img.shields.io/npm/types/omnirequest.svg?color=success)](https://www.npmjs.com/package/omnirequest)
+
+<!-- Popularity & Downloads -->
+
+[![npm downloads/month](https://img.shields.io/npm/dm/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
+[![npm downloads/total](https://img.shields.io/npm/dt/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
+
+<!-- CI & Build -->
+
+<!-- [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jasgigli/omni-request/ci.yml?label=CI&color=blueviolet)](https://github.com/jasgigli/omni-request/actions)
+[![Travis Build](https://img.shields.io/travis/jasgigli/omni-request.svg?label=Travis%20CI)](https://travis-ci.org/jasgigli/omni-request) -->
+
+<!-- Code Quality & Coverage -->
+
+<!-- [![codecov](https://codecov.io/gh/jasgigli/omni-request/branch/master/graph/badge.svg)](https://codecov.io/gh/jasgigli/omni-request)
+[![Maintainability](https://img.shields.io/codeclimate/maintainability/jasgigli/omni-request.svg?color=yellow)](https://codeclimate.com/github/jasgigli/omni-request/maintainability)
+[![Known Vulnerabilities](https://img.shields.io/snyk/vulnerabilities/github/jasgigli/omni-request.svg?color=red)](https://snyk.io/test/github/jasgigli/omni-request) -->
+
+<!-- Project Activity -->
+
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/jasgigli/omni-request.svg?color=orange)](https://github.com/jasgigli/omni-request/commits)
+[![Last Commit](https://img.shields.io/github/last-commit/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/commits)
+[![Open Issues](https://img.shields.io/github/issues/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/pulls)
+
+<!-- Community & Engagement -->
+
+[![GitHub Stars](https://img.shields.io/github/stars/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/network/members)
+[![GitHub Watchers](https://img.shields.io/github/watchers/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/watchers)
+
+<!-- Style & Commit Conventions -->
+
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+
+<!-- Repository Visitors -->
+
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=jasgigli.omni-request)](https://github.com/jasgigli/omni-request)
+
+**OmniRequest** is a **feature‑rich HTTP client** built for Node.js (and beyond) that solves real‑world challenges like **advanced caching & revalidation**, **concurrency & rate limiting**, **intelligent retry & circuit breakers**, and **auto‑auth with token refresh**. Whether you’re developing **microservices**, **CLI tools**, or **enterprise backends**, OmniRequest’s **middleware architecture** delivers unmatched flexibility and reliability.
 
 ---
 
 ## Table of Contents
 
 - [Key Features](#key-features)
+- [Why OmniRequest?](#why-omnirequest)
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
 - [Advanced Use Cases](#advanced-use-cases)
@@ -17,7 +60,7 @@ OmniRequest is a **modern Node.js HTTP client** built with a **powerful middlewa
   - [Concurrency & Rate Limiting](#concurrency--rate-limiting)
   - [Intelligent Retry & Circuit Breakers](#intelligent-retry--circuit-breakers)
   - [Auto Auth & Token Refresh](#auto-auth--token-refresh)
-- [Example: Putting It All Together](#example-putting-it-all-together)
+- [Full Example](#full-example)
 - [Architecture](#architecture)
 - [Contributing](#contributing)
 - [License](#license)
@@ -28,36 +71,49 @@ OmniRequest is a **modern Node.js HTTP client** built with a **powerful middlewa
 
 1. **Advanced Caching & Revalidation**
 
-   - ETag / Last-Modified handling (`If-None-Match`, `If-Modified-Since`)
-   - Offline caching in Node memory (or IndexedDB in browser, if used there)
+   - Automatically handles `ETag` / `If-Modified-Since` to reduce bandwidth
+   - Offline caching (in Node memory or IndexedDB in browsers)
    - Hooks for cache invalidation, partial revalidation
 
 2. **Concurrency Control & Rate Limiting**
 
    - Global or per-endpoint concurrency limits
-   - Token bucket or leaky bucket algorithms for smoothing bursts
-   - Queueing with priority to handle overload gracefully
+   - Token bucket or leaky bucket to smooth out request bursts
+   - Optional queueing & priority to handle overload gracefully
 
 3. **Intelligent Retry & Circuit Breakers**
 
-   - Exponential backoff with optional jitter
-   - Circuit breaker pattern to fail fast after repeated endpoint failures
-   - Granular retry conditions (e.g., only retry 5xx or network errors)
+   - Exponential backoff with optional jitter to avoid retry storms
+   - Circuit breaker opens after multiple failures to fail fast
+   - Granular retry conditions (e.g., only 5xx or network errors)
 
 4. **Auto Auth & Token Refresh**
 
-   - Multiple auth strategies: Basic, Bearer, OAuth2, or custom headers
-   - Automatic token refresh on expiry or 401 responses
-   - Hooks for success/error events when refreshing tokens
+   - Built-in Basic, Bearer, or OAuth2 strategies, plus custom headers
+   - Automatic token refresh upon expiry or 401 responses
+   - Callbacks for success/error events during refresh
 
 5. **Middleware & Plugin System**
 
-   - Compose your pipeline with caching, retry, logging, or custom logic
-   - Fine‑grained interceptors for request/response/error
+   - Easily compose caching, concurrency, retry, logging, etc.
+   - Fine‑grained interceptors for request, response, and error handling
 
 6. **TypeScript & ESM**
-   - Written in TypeScript for full type safety
+   - Written in TypeScript for type safety
    - Distributed as ESM for modern Node.js usage
+
+---
+
+## Why OmniRequest?
+
+Traditional HTTP clients (like `fetch` or `axios`) handle basic scenarios but leave advanced requirements to manual coding. **OmniRequest** solves these **real‑world developer pain points** out of the box:
+
+- **Reduce bandwidth** with ETag caching & revalidation
+- **Protect your server** from overload with concurrency & rate limiting
+- **Improve reliability** via intelligent retry & circuit breakers
+- **Secure endpoints** with auto‑auth and token refresh
+
+By leveraging OmniRequest’s powerful middleware architecture, you can integrate these features seamlessly into your Node.js applications.
 
 ---
 
@@ -67,11 +123,13 @@ OmniRequest is a **modern Node.js HTTP client** built with a **powerful middlewa
 npm install omnirequest
 ```
 
+_(Yarn users: `yarn add omnirequest`)_
+
 ---
 
 ## Basic Usage
 
-Below is a minimal Node.js example using OmniRequest to perform a GET request:
+Here’s a minimal Node.js example performing a simple GET request:
 
 ```js
 import { RequestClient } from "omnirequest";
@@ -90,19 +148,17 @@ async function fetchData() {
 fetchData();
 ```
 
-- **`RequestClient`** is your main entry point for sending HTTP requests (GET, POST, etc.).
-- **Promises & async/await**: OmniRequest is fully promise‑based.
+- **Promise & async/await**: OmniRequest uses promises for a clean, modern API.
+- **Request Methods**: Easily call `.get()`, `.post()`, `.put()`, `.delete()`, etc.
 
 ---
 
 ## Advanced Use Cases
 
-Below are real‑world problems OmniRequest solves for Node.js developers. Each feature is optional and can be enabled via middleware or plugins.
-
 ### Caching & Revalidation
 
-**Problem**: You repeatedly call the same endpoints, or want to handle `ETag`/`If-None-Match` to reduce bandwidth.  
-**Solution**: `RevalidationCacheMiddleware` automatically attaches `If-None-Match` headers if you have a cached copy. If the server responds `304 Not Modified`, OmniRequest returns the cached data.
+**Challenge**: Frequent requests to the same endpoint, or need to handle `ETag` to reduce bandwidth.  
+**Solution**: `RevalidationCacheMiddleware` automatically attaches `If-None-Match`, returning `304` if data is unchanged.
 
 ```js
 import { RequestClient, RevalidationCacheMiddleware } from "omnirequest";
@@ -110,25 +166,24 @@ import { RequestClient, RevalidationCacheMiddleware } from "omnirequest";
 const client = new RequestClient();
 client.use(
   new RevalidationCacheMiddleware({
-    maxAge: 60_000, // skip revalidation if data is younger than 60s
-    offline: false, // in Node, we just store in memory
+    maxAge: 60_000, // skip revalidation if data is < 60s old
+    offline: false, // store in Node memory
     onStore: (key, response) => {
-      console.log(`Stored data for ${key}, ETag: ${response.headers.etag}`);
+      console.log(`Cached ${key} => ETag: ${response.headers.etag || "none"}`);
     },
   })
 );
 
-// If the server returns ETag, subsequent GET requests might result in 304
 client
   .get("https://dummyjson.com/user")
-  .then((res) => console.log("Items:", res.data))
-  .catch((err) => console.error(err));
+  .then((res) => console.log("User data:", res.data))
+  .catch((err) => console.error("Error:", err));
 ```
 
 ### Concurrency & Rate Limiting
 
-**Problem**: You have multiple calls to the same or different endpoints, risking overload or 429 errors.  
-**Solution**: `ConcurrencyRateLimitMiddleware` can cap concurrency (global or per endpoint), plus optionally use a token bucket to smooth bursts.
+**Challenge**: Avoid overloading your API with too many concurrent or burst requests.  
+**Solution**: `ConcurrencyRateLimitMiddleware` sets concurrency caps and optional token bucket rate limiting.
 
 ```js
 import { RequestClient, ConcurrencyRateLimitMiddleware } from "omnirequest";
@@ -137,32 +192,28 @@ const client = new RequestClient();
 client.use(
   new ConcurrencyRateLimitMiddleware({
     globalConcurrency: 3,
-    endpointConcurrency: {
-      "https://dummyjson.com/user": 2,
-    },
-    queue: true,
     tokenBucket: {
       capacity: 5,
       refillRate: 1,
       intervalMs: 3000,
     },
+    queue: true,
   })
 );
 
-// If you quickly fire 10 requests, concurrency and tokens will
-// ensure only 3 run in parallel, and the rest queue or wait for tokens.
+// Fire multiple requests; only 3 run at once, extra requests queue
 for (let i = 0; i < 10; i++) {
   client
     .get("https://dummyjson.com/user")
-    .then((res) => console.log(`Request #${i} status: ${res.status}`))
-    .catch((err) => console.error(`Request #${i} error: ${err}`));
+    .then((res) => console.log(`Request #${i}: ${res.status}`))
+    .catch((err) => console.error(`Request #${i} error:`, err));
 }
 ```
 
 ### Intelligent Retry & Circuit Breakers
 
-**Problem**: Endpoints sometimes fail, you want to retry with backoff. But if an endpoint is truly down, you want to fail fast.  
-**Solution**: `IntelligentRetryMiddleware` uses exponential backoff with jitter, plus a circuit breaker pattern to avoid repeated attempts once a threshold of failures is reached.
+**Challenge**: Endpoints might fail sporadically; you need exponential backoff. If a service is truly down, open a circuit breaker.  
+**Solution**: `IntelligentRetryMiddleware` tries each request up to `maxRetries`, uses backoff with jitter, and can open a circuit after repeated failures.
 
 ```js
 import { RequestClient, IntelligentRetryMiddleware } from "omnirequest";
@@ -174,22 +225,22 @@ client.use(
     baseDelay: 1000,
     jitter: true,
     circuitBreaker: {
-      threshold: 2, // after 2 consecutive failures, open circuit
-      cooldown: 10_000, // wait 10s before half-opening
+      threshold: 2,
+      cooldown: 10000,
     },
   })
 );
 
 client
   .get("https://dummyjson.com/user")
-  .then((res) => console.log("Flaky endpoint data:", res.data))
-  .catch((err) => console.error("Failed after retries/circuit open:", err));
+  .then((res) => console.log("Data:", res.data))
+  .catch((err) => console.error("Failed after retries/circuit:", err));
 ```
 
 ### Auto Auth & Token Refresh
 
-**Problem**: Handling short-lived tokens (e.g., Bearer or OAuth2) is tedious, requiring code for expiry checks and refresh.  
-**Solution**: `setupAutoAuth` plugin automatically attaches tokens, refreshes them upon expiry or 401, and replays failed requests after a successful refresh.
+**Challenge**: Managing short‑lived tokens (Bearer/OAuth2) or basic auth across multiple endpoints.  
+**Solution**: `setupAutoAuth` automatically attaches credentials, refreshes tokens on expiry/401, and replays failed requests.
 
 ```js
 import { RequestClient, setupAutoAuth } from "omnirequest";
@@ -199,32 +250,26 @@ const client = new RequestClient();
 setupAutoAuth(client, {
   type: "bearer",
   token: "INITIAL_TOKEN",
-  tokenExpiry: Date.now() + 60000, // expires in 1 minute
+  tokenExpiry: Date.now() + 60000,
   refreshToken: async () => {
-    // Call an endpoint or do something to get a new token
-    const newToken = await fetchNewTokenFromAuthServer();
-    return newToken;
+    // call an auth server to get new token
+    return "NEW_TOKEN";
   },
-  onRefreshSuccess: (newToken) => {
-    console.log("Got a new token:", newToken);
-  },
-  onRefreshError: (err) => {
-    console.error("Token refresh failed:", err);
-  },
+  onRefreshSuccess: (newToken) => console.log("Refreshed token =>", newToken),
+  onRefreshError: (err) => console.error("Refresh failed:", err),
 });
 
-// OmniRequest automatically refreshes token if expired or if 401 is encountered
 client
   .get("https://dummyjson.com/user")
-  .then((res) => console.log("Protected data:", res.data))
-  .catch((err) => console.error(err));
+  .then((res) => console.log("Secured data:", res.data))
+  .catch((err) => console.error("Auth error:", err));
 ```
 
 ---
 
-## Example: Putting It All Together
+## Full Example
 
-A single Node.js script that uses **caching, concurrency, retry, and auto-auth**:
+A single Node.js script using **all** advanced features together:
 
 ```js
 import {
@@ -232,24 +277,20 @@ import {
   RevalidationCacheMiddleware,
   ConcurrencyRateLimitMiddleware,
   IntelligentRetryMiddleware,
-  setupAutoAuth,
 } from "omnirequest";
+import { setupAutoAuth } from "omnirequest/plugins/autoAuth";
 
 const client = new RequestClient({ timeout: 5000 });
 
-// 1. Advanced Caching & Revalidation
-client.use(
-  new RevalidationCacheMiddleware({
-    maxAge: 30000,
-    offline: false,
-  })
-);
+// 1. Caching & Revalidation
+client.use(new RevalidationCacheMiddleware({ maxAge: 30000, offline: false }));
 
 // 2. Concurrency & Rate Limiting
 client.use(
   new ConcurrencyRateLimitMiddleware({
     globalConcurrency: 3,
     tokenBucket: { capacity: 5, refillRate: 1, intervalMs: 3000 },
+    queue: true,
   })
 );
 
@@ -268,73 +309,64 @@ setupAutoAuth(client, {
   type: "bearer",
   token: "INITIAL_TOKEN",
   tokenExpiry: Date.now() + 60000,
-  refreshToken: async () => {
-    // implement your token refresh logic
-    return "NEW_TOKEN";
-  },
+  refreshToken: async () => "NEW_TOKEN",
 });
 
 async function main() {
   try {
-    const res = await client.get("https://dummyjson.com/user");
-    console.log("Result:", res.data);
+    const response = await client.get("https://dummyjson.com/user");
+    console.log("User info:", response.data);
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Request error:", err);
   }
 }
 
 main();
 ```
 
-- **First** call might store an ETag or last-modified if returned by the server, skipping revalidation if data is fresh.
-- **Concurrency** ensures no more than 3 in-flight requests at once, and the token bucket manages bursts.
-- **Retry** with exponential backoff if the endpoint is flaky, and the circuit breaker opens after repeated failures.
-- **Auto Auth** automatically refreshes the token if it expires or if a 401 is returned.
-
 ---
 
 ## Architecture
 
-OmniRequest is built with a modular, pluggable architecture:
-
 ```
 omnirequest/
 ├── src/
-│   ├── adapters/       # Environment-specific (Node, Bun, Deno, etc.)
-│   ├── core/           # Core request client, interceptors, pipeline
-│   ├── middleware/     # Pluggable middleware (cache, concurrency, retry, etc.)
-│   ├── plugins/        # Optional plugins (auth, logging, etc.)
-│   └── types/          # TypeScript type definitions
+│   ├── adapters/           # Node/Bun/Deno-specific adapters
+│   ├── core/               # Core request pipeline & interceptors
+│   ├── middleware/         # Pluggable modules (cache, concurrency, retry, transform)
+│   ├── plugins/            # Specialized plugins (autoAuth, logging, etc.)
+│   └── types/              # TypeScript definitions
 └── ...
 ```
 
-- **Core** handles request pipelines and interceptors.
-- **Middleware** are pluggable modules that manipulate requests, responses, or errors (e.g., caching, concurrency, retry).
-- **Plugins** can add specialized features like auto‑auth or custom logging.
+- **Core**: The heart of OmniRequest, handling request orchestration.
+- **Middleware**: Extend or modify behavior (caching, concurrency, retry).
+- **Plugins**: Add specialized functionality (auto auth, logging).
+- **Interceptors**: Fine-grained hooks for request, response, and error.
 
 ---
 
 ## Contributing
 
-We welcome contributions from the community!
+We love community contributions! Here’s how to help:
 
-1. **Fork this Repository**
+1. **Fork the Repo**
 2. **Create a Feature Branch**
    ```bash
    git checkout -b feature/my-new-feature
    ```
-3. **Commit Your Changes**
-4. **Open a Pull Request**
+3. **Commit & Push**
+4. **Open a Pull Request** on GitHub
 
-For detailed guidelines, check [CONTRIBUTING.md](CONTRIBUTING.md).
+Check out [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
 ## License
 
-OmniRequest is licensed under the [MIT License](LICENSE).  
-Feel free to use, modify, and distribute it in your projects.
+OmniRequest is open‑source under the [MIT License](LICENSE).  
+Use it freely for your Node.js or cross‑platform projects!
 
 ---
 
-Happy coding with **OmniRequest** in Node.js! If you have questions or issues, please open an issue or submit a pull request.
+**Ready to streamline your Node.js HTTP calls?** Install OmniRequest now and discover a more reliable, efficient, and secure way to handle API requests. If you have questions or need support, please open an issue or pull request. Happy coding!
