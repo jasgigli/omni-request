@@ -3,43 +3,42 @@
 <!-- Core Project Badges -->
 
 [![npm version](https://img.shields.io/npm/v/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
+[![npm downloads/total](https://img.shields.io/npm/dt/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
 [![license](https://img.shields.io/npm/l/omnirequest.svg?color=blue)](LICENSE)
-[![node](https://img.shields.io/node/v/omnirequest.svg?color=informational)](https://www.npmjs.com/package/omnirequest)
+
+<!-- [![node](https://img.shields.io/node/v/omnirequest.svg?color=informational)](https://www.npmjs.com/package/omnirequest) -->
+
 [![Type definitions](https://img.shields.io/npm/types/omnirequest.svg?color=success)](https://www.npmjs.com/package/omnirequest)
 
 <!-- Popularity & Downloads -->
 
 [![npm downloads/month](https://img.shields.io/npm/dm/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
-[![npm downloads/total](https://img.shields.io/npm/dt/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
 
 <!-- CI & Build -->
-
 <!-- [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jasgigli/omni-request/ci.yml?label=CI&color=blueviolet)](https://github.com/jasgigli/omni-request/actions)
 [![Travis Build](https://img.shields.io/travis/jasgigli/omni-request.svg?label=Travis%20CI)](https://travis-ci.org/jasgigli/omni-request) -->
-
 <!-- Code Quality & Coverage -->
-
 <!-- [![codecov](https://codecov.io/gh/jasgigli/omni-request/branch/master/graph/badge.svg)](https://codecov.io/gh/jasgigli/omni-request)
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/jasgigli/omni-request.svg?color=yellow)](https://codeclimate.com/github/jasgigli/omni-request/maintainability)
 [![Known Vulnerabilities](https://img.shields.io/snyk/vulnerabilities/github/jasgigli/omni-request.svg?color=red)](https://snyk.io/test/github/jasgigli/omni-request) -->
-
 <!-- Project Activity -->
 
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/jasgigli/omni-request.svg?color=orange)](https://github.com/jasgigli/omni-request/commits)
 [![Last Commit](https://img.shields.io/github/last-commit/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/commits)
-[![Open Issues](https://img.shields.io/github/issues/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/pulls)
 
+<!-- [![Open Issues](https://img.shields.io/github/issues/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/pulls) -->
 <!-- Community & Engagement -->
 
 [![GitHub Stars](https://img.shields.io/github/stars/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/network/members)
-[![GitHub Watchers](https://img.shields.io/github/watchers/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/watchers)
+
+<!-- [![GitHub Forks](https://img.shields.io/github/forks/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/network/members)
+[![GitHub Watchers](https://img.shields.io/github/watchers/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/watchers) -->
 
 <!-- Style & Commit Conventions -->
 
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+<!-- [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/) -->
 
 <!-- Repository Visitors -->
 
