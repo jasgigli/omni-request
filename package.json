@@ -1,6 +1,6 @@
 {
   "name": "omnirequest",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "description": "A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.",
   "keywords": [
