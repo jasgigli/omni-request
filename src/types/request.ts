@@ -1,13 +1,5 @@
-import { ResponseData } from "./response";
+import { HttpMethod } from "./http";
 
-export type HttpMethod =
-  | "GET"
-  | "POST"
-  | "PUT"
-  | "DELETE"
-  | "PATCH"
-  | "HEAD"
-  | "OPTIONS";
 export type ResponseType = "json" | "text" | "blob" | "arraybuffer";
 
 export type CacheMode =
@@ -24,49 +16,24 @@ export interface GraphQLOptions {
   operationName?: string;
 }
 
-export interface AxiosLikeRequestConfig {
+export interface RequestConfig {
   url?: string;
-  method?: HttpMethod;
   baseURL?: string;
+  method?: HttpMethod; // Using imported HttpMethod type
   headers?: Record<string, string>;
-  params?: any;
+  params?: Record<string, any>;
   data?: any;
   timeout?: number;
-  timeoutErrorMessage?: string;
+  validateStatus?: (status: number) => boolean;
+  responseType?: ResponseType;
+  cache?: CacheMode;
+  signal?: AbortSignal;
   withCredentials?: boolean;
   auth?: {
     username: string;
     password: string;
   };
-  responseType?: ResponseType;
-  responseEncoding?: string;
-  xsrfCookieName?: string;
-  xsrfHeaderName?: string;
-  maxContentLength?: number;
-  maxBodyLength?: number;
-  maxRedirects?: number;
-  proxy?: {
-    host: string;
-    port: number;
-    auth?: {
-      username: string;
-      password: string;
-    };
-    protocol?: string;
-  };
-  decompress?: boolean;
-  transitional?: {
-    silentJSONParsing?: boolean;
-    forcedJSONParsing?: boolean;
-    clarifyTimeoutError?: boolean;
-  };
-  signal?: AbortSignal;
-  onUploadProgress?: (progressEvent: any) => void;
-  onDownloadProgress?: (progressEvent: any) => void;
-  validateStatus?: ((status: number) => boolean) | null;
-  paramsSerializer?: (params: any) => string;
-  transformRequest?: ((data: any, headers?: any) => any)[];
-  transformResponse?: ((data: any) => any)[];
+  graphql?: GraphQLOptions;
 }
 
 export interface RequestOptions {
@@ -85,16 +52,30 @@ export interface RequestOptions {
   transformResponse?: ((data: any) => any)[];
 }
 
-export interface RequestConfig {
+// Base configuration interface that can be used for client initialization
+export interface BaseRequestConfig {
   url?: string;
   method?: string;
+  headers?: Record<string, string>;
   baseURL?: string;
+  timeout?: number;
+  responseType?: string;
+  validateStatus?: (status: number) => boolean;
+  [key: string]: any;
+}
+
+// Extended configuration interface that requires URL for actual requests
+export interface RequestConfig extends BaseRequestConfig {
+  url?: string; // Make url optional since it can be provided later
+  baseURL?: string;
+  method?: Method;
   headers?: Record<string, string>;
   params?: Record<string, any>;
   data?: any;
   timeout?: number;
   validateStatus?: (status: number) => boolean;
-  responseType?: "json" | "text" | "blob" | "arraybuffer";
+  responseType?: ResponseType;
+  // ... other properties
 }
 
 export interface RequestResponse<T = any> {

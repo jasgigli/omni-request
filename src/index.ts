@@ -1,5 +1,8 @@
-import omni from "./factory.js";
-export default omni;
+export * from "./types/middleware";
+export * from "./types/request";
+export * from "./types/response";
+export * from "./types/error";
 
-export { RequestClient } from "./core/requestClient.js";
-export type { RequestConfig, RequestResponse } from "./types/request.js";
+export { RequestClient } from "./core/requestClient";
+export { MiddlewareManager } from "./core/middleware/middlewareManager";
+export { default } from "./factory";

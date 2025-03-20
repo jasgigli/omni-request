@@ -1,23 +1,30 @@
 import type { RequestConfig } from "../types/request";
 import type { ResponseData } from "../types/response";
 import type { Plugin } from "../types";
+import type { IMiddlewareManager } from "../types/middleware";
 import { MiddlewareManager } from "./middleware/middlewareManager";
 import { getAdapter } from "../adapters";
 import { createDefaultConfig } from "./config";
 
 export class RequestClient {
   private config: RequestConfig;
-  private middleware: MiddlewareManager;
+  private middleware: IMiddlewareManager;
   private plugins: Plugin[];
 
-  constructor(config: RequestConfig = {}) {
+  constructor(config: Partial<RequestConfig> = {}) {
     this.config = { ...createDefaultConfig(), ...config };
     this.middleware = new MiddlewareManager();
     this.plugins = [];
   }
 
-  async request<T = any>(config: RequestConfig): Promise<ResponseData<T>> {
-    let finalConfig = { ...this.config, ...config };
+  async request<T = any>(
+    requestConfig: RequestConfig
+  ): Promise<ResponseData<T>> {
+    if (!requestConfig.url) {
+      throw new Error("URL is required for making a request");
+    }
+
+    let finalConfig = { ...this.config, ...requestConfig };
 
     try {
       // Apply plugins pre-request
@@ -50,5 +57,13 @@ export class RequestClient {
     } catch (error) {
       throw error;
     }
+  }
+
+  use(plugin: Plugin): void {
+    this.plugins.push(plugin);
+  }
+
+  getMiddlewareManager(): IMiddlewareManager {
+    return this.middleware;
   }
 }

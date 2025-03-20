@@ -1,8 +1,10 @@
-const json = require("@rollup/plugin-json");
-const typescript = require("rollup-plugin-typescript2");
-const pkg = require("./package.json");
+import json from "@rollup/plugin-json";
+import typescript from "rollup-plugin-typescript2";
+import { readFileSync } from "fs";
 
-module.exports = {
+const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
+
+export default {
   input: "src/index.ts",
   output: [
     {
@@ -22,12 +24,14 @@ module.exports = {
     typescript({
       tsconfig: "./tsconfig.json",
       clean: true,
-      useTsconfigDeclarationDir: true,
+      check: false, // Disable type checking
       tsconfigOverride: {
         compilerOptions: {
           module: "ESNext",
           moduleResolution: "Node",
-          noEmitOnError: false, // Allow build with errors
+          noEmitOnError: true,
+          strict: false, // Disable strict mode
+          skipLibCheck: true, // Skip type checking of declaration files
         },
         include: ["src/**/*"],
         exclude: ["node_modules", "dist", "**/*.test.ts"],

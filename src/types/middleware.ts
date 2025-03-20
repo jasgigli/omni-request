@@ -1,15 +1,21 @@
 import type { RequestConfig } from "./request";
 import type { ResponseData } from "./response";
 
-export interface MiddlewareFunction {
-  (config: RequestConfig): Promise<RequestConfig>;
-}
+export type MiddlewareFunction = (
+  config: RequestConfig
+) => Promise<RequestConfig>;
+export type ResponseMiddlewareFunction = (
+  response: ResponseData
+) => Promise<ResponseData>;
 
-export interface ResponseMiddlewareFunction {
-  (response: ResponseData): Promise<ResponseData>;
-}
-
-export interface MiddlewareManager {
+export interface IMiddlewareManager {
   request: MiddlewareFunction[];
   response: ResponseMiddlewareFunction[];
+  applyRequestMiddleware(config: RequestConfig): Promise<RequestConfig>;
+  applyResponseMiddleware(response: ResponseData): Promise<ResponseData>;
+}
+
+export interface Middleware {
+  request?: MiddlewareFunction;
+  response?: ResponseMiddlewareFunction;
 }

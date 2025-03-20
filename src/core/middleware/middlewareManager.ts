@@ -1,12 +1,13 @@
 import type { RequestConfig } from "../../types/request";
 import type { ResponseData } from "../../types/response";
 import type {
+  IMiddlewareManager,
   MiddlewareFunction,
   ResponseMiddlewareFunction,
-  MiddlewareManager,
+  Middleware,
 } from "../../types/middleware";
 
-export class MiddlewareManager implements MiddlewareManager {
+export class MiddlewareManager implements IMiddlewareManager {
   request: MiddlewareFunction[] = [];
   response: ResponseMiddlewareFunction[] = [];
 
@@ -24,5 +25,19 @@ export class MiddlewareManager implements MiddlewareManager {
       finalResponse = await middleware(finalResponse);
     }
     return finalResponse;
+  }
+
+  use(middleware: Middleware): void {
+    if (middleware.request) {
+      this.request.push(middleware.request);
+    }
+    if (middleware.response) {
+      this.response.push(middleware.response);
+    }
+  }
+
+  clear(): void {
+    this.request = [];
+    this.response = [];
   }
 }

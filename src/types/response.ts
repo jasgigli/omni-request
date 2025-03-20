@@ -7,8 +7,3 @@ export interface ResponseData<T = any> {
   headers: Record<string, string>;
   config: RequestConfig;
 }
-
-// Use a different name to avoid conflict
-export interface ApiErrorResponse extends ErrorResponse {
-  response?: ResponseData;
-}

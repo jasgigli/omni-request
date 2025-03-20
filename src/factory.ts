@@ -1,9 +1,10 @@
 import { RequestClient } from "./core/requestClient";
 import { defaultConfig } from "./config/defaults";
 import type { RequestConfig } from "./types/request";
+import type { HttpMethod } from "./types/http";
 
 class OmniRequest extends RequestClient {
-  static create(config: RequestConfig = {}) {
+  static create(config: Partial<RequestConfig> = {}) {
     return new RequestClient({ ...defaultConfig, ...config });
   }
 
@@ -14,3 +15,4 @@ class OmniRequest extends RequestClient {
 const omni = new OmniRequest(defaultConfig);
 
 export default omni;
+export { HttpMethod, RequestConfig };

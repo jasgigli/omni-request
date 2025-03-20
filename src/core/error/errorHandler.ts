@@ -1,36 +1,28 @@
+import type { RequestConfig } from "../../types/request";
+import type { RequestError, ErrorType } from "../../types/error";
+import type { ResponseData } from "../../types/response";
+
 export class ErrorHandler {
-  private errorCategories = new Map<string, ErrorCategory>();
-  private fallbackEndpoints = new Map<string, string[]>();
-  private messageTemplates: Record<string, string> = {};
+  private fallbackEndpoints: Map<string, string[]> = new Map();
+  private messageTemplates: Record<string, string> = {
+    NETWORK_ERROR: "Network error occurred: {message}",
+    TIMEOUT: "Request timed out: {url}",
+    CANCELED: "Request was canceled",
+    RESPONSE_PROCESSING_ERROR: "Error processing response: {message}",
+    VALIDATION_ERROR: "Validation error: {message}",
+  };
 
-  constructor(options: ErrorHandlerOptions = {}) {
-    this.initializeDefaultCategories();
-    this.messageTemplates = options.messageTemplates || {};
-  }
+  constructor(private client: any) {}
 
-  categorizeError(error: any): ErrorCategory {
-    if (error.isNetworkError) return this.errorCategories.get("network")!;
-    if (error.response?.status >= 500)
-      return this.errorCategories.get("server")!;
-    if (error.response?.status === 429)
-      return this.errorCategories.get("rateLimit")!;
-    if (error.response?.status === 401)
-      return this.errorCategories.get("auth")!;
-    return this.errorCategories.get("unknown")!;
-  }
-
-  async handleError(error: any, config: RequestConfig): Promise<any> {
+  async handleError(error: RequestError, config: RequestConfig): Promise<any> {
     const category = this.categorizeError(error);
 
-    // Try fallback endpoints if available
-    if (category.allowFallback && this.fallbackEndpoints.has(config.url)) {
+    if (category.allowFallback && this.fallbackEndpoints.has(config.url!)) {
       return this.tryFallbackEndpoints(config);
     }
 
-    // Transform error message
-    error.userMessage = this.getUserMessage(error);
+    error.message = this.getUserMessage(error);
 
-    // Log error if needed
     if (category.shouldLog) {
       await this.logError(error);
     }
@@ -38,8 +30,25 @@ export class ErrorHandler {
     throw error;
   }
 
-  private async tryFallbackEndpoints(config: RequestConfig): Promise<any> {
-    const fallbacks = this.fallbackEndpoints.get(config.url)!;
+  private categorizeError(error: RequestError): {
+    name: ErrorType;
+    allowFallback: boolean;
+    shouldLog: boolean;
+    defaultMessage: string;
+  } {
+    // Implementation here
+    return {
+      name: error.code,
+      allowFallback: true,
+      shouldLog: true,
+      defaultMessage: "An error occurred",
+    };
+  }
+
+  private async tryFallbackEndpoints(
+    config: RequestConfig
+  ): Promise<ResponseData> {
+    const fallbacks = this.fallbackEndpoints.get(config.url!)!;
 
     for (const fallbackUrl of fallbacks) {
       try {
@@ -55,14 +64,26 @@ export class ErrorHandler {
     throw new Error("All fallback endpoints failed");
   }
 
-  private getUserMessage(error: any): string {
+  private getUserMessage(error: RequestError): string {
     const category = this.categorizeError(error);
     const template =
       this.messageTemplates[category.name] || category.defaultMessage;
 
     return template.replace(
       /\{(\w+)\}/g,
-      (_, key) => error[key] || error.response?.[key] || "?"
+      (_, key) =>
+        error[key as keyof RequestError] ||
+        error.response?.[key as keyof ResponseData] ||
+        "?"
     );
+  }
+
+  private async logError(error: RequestError): Promise<void> {
+    console.error("[OmniRequest Error]", {
+      message: error.message,
+      code: error.code,
+      config: error.config,
+      response: error.response,
+    });
   }
 }

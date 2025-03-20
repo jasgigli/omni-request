@@ -1,11 +1,12 @@
-import type { RequestConfig } from '../types/request';
+import type { RequestConfig } from "../types/request";
 
-export const defaultConfig: RequestConfig = {
-  baseURL: '',
+export const defaultConfig: Partial<RequestConfig> = {
+  baseURL: "",
+  method: "GET",
   timeout: 0,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   validateStatus: (status: number) => status >= 200 && status < 300,
-  responseType: 'json',
+  responseType: "json",
 };

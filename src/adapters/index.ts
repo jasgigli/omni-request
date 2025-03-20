@@ -1,17 +1,28 @@
 import { browserAdapter } from "./browserAdapter";
 import { nodeAdapter } from "./nodeAdapter";
-import { denoAdapter } from "./denoAdapter";
+import { bunAdapter } from "./bunAdapter";
 import type { RequestConfig } from "../types/request";
+import type { ResponseData } from "../types/response";
 
-export function selectAdapter() {
-  if (typeof window !== "undefined" && window.fetch) {
+export type AdapterFunction = (config: RequestConfig) => Promise<ResponseData>;
+
+export function getAdapter(): AdapterFunction {
+  // Check for Deno environment
+  if (typeof globalThis !== "undefined" && "Deno" in globalThis) {
+    return browserAdapter; // Deno uses browser-compatible fetch
+  }
+
+  // Check for Bun environment
+  if (typeof globalThis !== "undefined" && "Bun" in globalThis) {
+    return bunAdapter;
+  }
+
+  // Check for browser environment
+  if (typeof window !== "undefined" && typeof window.fetch === "function") {
     return browserAdapter;
   }
 
-  if (typeof Deno !== "undefined") {
-    return denoAdapter;
-  }
-
+  // Check for Node.js environment
   if (
     typeof process !== "undefined" &&
     process.versions &&
@@ -20,9 +31,6 @@ export function selectAdapter() {
     return nodeAdapter;
   }
 
-  return browserAdapter; // Default to browser adapter
+  // Default to browser adapter
+  return browserAdapter;
 }
-
-export const getAdapter = selectAdapter;
-
-export type RequestAdapter = (config: RequestConfig) => Promise<any>;
