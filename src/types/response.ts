@@ -1,4 +1,3 @@
-// src/types/response.ts
 import { RequestConfig } from "./request";
 
 export interface ResponseData<T = any> {
@@ -7,5 +6,7 @@ export interface ResponseData<T = any> {
   statusText: string;
   headers: Record<string, string>;
   config: RequestConfig;
-  request?: any;
 }
+
+// Use the ErrorResponse from error.ts instead of defining it here
+export { ErrorResponse } from "./error";

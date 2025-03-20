@@ -1,25 +1,26 @@
-// src/adapters/index.ts
 import { browserAdapter } from "./browserAdapter";
 import { nodeAdapter } from "./nodeAdapter";
-import { bunAdapter } from "./bunAdapter";
 import { denoAdapter } from "./denoAdapter";
-import { RequestConfig } from "../types/request";
-import { ResponseData } from "../types/response";
+import type { RequestConfig } from "../types/request";
 
-export type AdapterFunction = (config: RequestConfig) => Promise<ResponseData>;
-
-export function getAdapter(): AdapterFunction {
-  if (typeof Deno !== 'undefined' && typeof Deno.version !== 'undefined') {
-    return denoAdapter;
-  }
-  if (typeof Bun !== 'undefined') {
-    return bunAdapter;
-  }
-  if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+export function selectAdapter() {
+  if (typeof window !== "undefined" && window.fetch) {
     return browserAdapter;
   }
-  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+
+  if (typeof Deno !== "undefined") {
+    return denoAdapter;
+  }
+
+  if (
+    typeof process !== "undefined" &&
+    process.versions &&
+    process.versions.node
+  ) {
     return nodeAdapter;
   }
-  return browserAdapter;
+
+  return browserAdapter; // Default to browser adapter
 }
+
+export type RequestAdapter = (config: RequestConfig) => Promise<any>;

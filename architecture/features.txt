@@ -1,147 +1,76 @@
-Below is a **summary of which advanced features your OmniRequest library currently has** (based on the code you’ve added) and **which additional features** might be the most impactful for solving real-world developer pain points going forward.
+Below is a consolidated list of features that the **Omni Request** library aims to incorporate. This list covers native approaches (XHR, Fetch, Axios) and adds advanced, modern capabilities to address common developer pain points:
+
+### Native & Traditional Methods
+
+- **XMLHttpRequest (XHR)**
+  - Classic API available in all browsers.
+  - Callback-based with verbose syntax.
+  - Provides low-level control of HTTP requests.
+
+- **Fetch API**
+  - Native, promise-based API in modern browsers.
+  - Supports async/await for cleaner asynchronous code.
+  - Offers features like streaming responses and built-in cancellation via AbortController.
+
+- **Axios**
+  - A popular third-party library that wraps XHR (or fetch polyfills).
+  - Provides built-in JSON transformation, interceptors, and error handling.
+  - Supports both browser and Node.js environments.
+
+### Advanced & Additional Features in Omni Request
+
+- **Unified Configuration & Fluent Interface**
+  - Consistent API across browser and Node.js.
+  - Chainable methods for setting global and per-request options.
+
+- **Request & Response Interceptors**
+  - Pre-process requests (e.g., attach auth tokens).
+  - Post-process responses (e.g., logging, error transformation).
+
+- **Request Cancellation & Timeout**
+  - Use of AbortController for automatic cancellation.
+  - Custom timeout settings to abort long-running requests.
+
+- **Automatic Retries with Exponential Backoff**
+  - Automatic retry of failed requests based on network errors.
+  - Configurable retry counts and exponential delay strategies.
+
+- **Streaming Large Responses**
+  - Support for processing large payloads via stream APIs.
+  - Incremental data handling for file downloads or real-time feeds.
+
+- **Advanced Caching & Logging**
+  - Built-in caching strategies (e.g., in-memory caching).
+  - Detailed logging of API calls to aid in debugging and monitoring.
+
+- **Batching Requests**
+  - Combine multiple API calls within a short time frame into a single request.
+  - Reduces network overhead and improves performance.
+
+- **Concurrency Control**
+  - Limit the number of simultaneous API calls.
+  - Queue and manage requests to avoid overloading resources.
+
+- **Circuit Breaker Pattern**
+  - Automatically stop API calls to an unstable endpoint when error rates are high.
+  - Prevents cascading failures and gives time for recovery.
+
+- **Rate Limiting**
+  - Throttle requests to avoid exceeding defined thresholds.
+  - Protects both the client and the server from overloading.
+
+- **Plugin Architecture**
+  - Extensible middleware system to inject custom behaviors.
+  - Allows developers to add custom logging, analytics, or security layers.
+
+- **Real-Time Updates with WebSocket Fallback**
+  - Seamlessly switch from HTTP polling to WebSocket for live data.
+  - Ideal for applications that require real-time notifications or updates.
+
+- **Enhanced Error Reporting**
+  - Return rich error objects including context (timestamps, request IDs, retry counts).
+  - Helps developers diagnose and resolve issues faster.
 
 ---
 
-## 1. **Features Already in Your Library**
-
-### A. Advanced Caching & Revalidation
-
-- **ETag / Last-Modified Support**:  
-  Via the `RevalidationCacheMiddleware`, you handle conditional requests (`If-None-Match`, `If-Modified-Since`) and can serve cached responses if the server replies `304 Not Modified`.
-
-- **Cache Invalidation & Revalidation Hooks**:  
-  Hooks like `onStore` and `onOffline` let developers customize how they handle storing or returning data from the cache.
-
-- **Offline-First Mode**:  
-  In a browser, data can be stored in IndexedDB for offline usage. This is especially helpful for unreliable networks or offline apps.
-
-### B. Concurrency Control & Rate Limiting
-
-- **Global or Endpoint-Level Concurrency Limits**:  
-  The `ConcurrencyRateLimitMiddleware` allows a max number of in-flight requests globally or per endpoint.
-
-- **Token Bucket Algorithm**:  
-  Developers can specify a token bucket to smooth out bursts, automatically refilling tokens at a defined rate.
-
-- **Queueing & Priority**:  
-  If concurrency or tokens are unavailable, requests can queue. A `priorityFn` can reorder queued requests, letting critical requests jump ahead.
-
-### C. Intelligent Retry & Circuit Breakers
-
-- **Exponential Backoff with Jitter**:  
-  The `IntelligentRetryMiddleware` calculates exponential backoff and can add random jitter to avoid “thundering herd” problems.
-
-- **Circuit Breaker Patterns**:  
-  After multiple consecutive failures, the circuit opens and fails fast. After a cooldown, it half-opens to test the endpoint again.
-
-- **Granular Retry Conditions**:  
-  Developers can define which errors or status codes trigger a retry (e.g., network errors or 5xx but not 4xx).
-
----
-
-## 2. **Features You Might Add Next**
-
-Below are some of the **most impactful** remaining features that can further differentiate your library and solve real-world developer challenges.
-
-### A. **Custom Instrumentation & Tracing**
-
-1. **OpenTelemetry or Custom Tracing Hooks**  
-   - Let developers attach trace IDs, measure request latency, or integrate with logging/tracing systems.  
-   - This helps large apps or microservices monitor performance and pinpoint slow endpoints.
-
-2. **Performance Metrics**  
-   - Provide built-in metrics (avg response time, request counts, error rates).  
-   - Expose them via events or a built-in aggregator so devs can easily observe how the library is performing.
-
-**Why It’s Important:**  
-Modern production apps rely heavily on metrics and observability to ensure reliability, especially in microservice or distributed systems.
-
----
-
-### B. **Extended Plugin / Middleware System**
-
-1. **Dynamic Loading of Plugins**  
-   - Let developers add or remove plugins at runtime (e.g., for logging, caching, authentication).  
-2. **Middleware Composition**  
-   - Let them reorder or selectively apply middleware on a per-request basis.  
-3. **Chaining / Pipeline Patterns**  
-   - Provide a more powerful system than typical interceptors, with before/after transformations and debugging tools.
-
-**Why It’s Important:**  
-Your library already uses a middleware approach, but adding more dynamic composition (e.g., apply a custom plugin only for certain routes) can address advanced use cases and keep the library flexible.
-
----
-
-### C. **Automatic Auth & Token Refresh**
-
-1. **Built-in OAuth2 / JWT**  
-   - Standard flows for refreshing tokens automatically.  
-2. **Multiple Auth Strategies**  
-   - Basic, Bearer, or custom headers.  
-3. **Credential Storage & Rotation**  
-   - Securely store tokens, automatically rotate them upon expiration.
-
-**Why It’s Important:**  
-Many developers face the hassle of implementing token refresh logic repeatedly. Providing a robust built-in solution saves time and prevents errors.
-
----
-
-### D. **Customizable Data Transformation**
-
-1. **JSON -> Class Conversion**  
-   - Integrate with TypeScript classes or schemas (like Zod/JOI) to auto-validate responses.  
-2. **GraphQL or JSON:API Support**  
-   - Provide specialized data transformations for these protocols, including error handling.  
-3. **Bidirectional Serialization**  
-   - Convert request payloads to `FormData` or JSON, parse responses into typed objects.
-
-**Why It’s Important:**  
-Many teams want a typed, validated approach for their request/response data, especially in TypeScript-based projects. This can reduce runtime errors and improve developer productivity.
-
----
-
-### E. **File Upload & Progress Reporting**
-
-1. **Multi-Part FormData**  
-   - Built-in support for large file uploads, boundary management.  
-2. **Progress Callbacks**  
-   - In Node, use streams; in the browser, use `onUploadProgress`.  
-   - Developers can show progress bars or handle partial uploads gracefully.
-
-**Why It’s Important:**  
-File uploads are common. Native `fetch` requires manual streaming, and `axios` has partial progress support, but not for Node streaming. Offering a robust solution helps dev teams building large upload flows.
-
----
-
-### F. **Advanced Error Categorization & Handling**
-
-1. **Error Categories**  
-   - Distinguish network errors, timeouts, 4xx, 5xx, circuit-breaker rejections, etc.  
-2. **Fallback Logic**  
-   - If the primary endpoint fails, automatically try a secondary endpoint.  
-3. **Localized / User-Friendly Messages**  
-   - Let devs easily transform error objects into user-facing messages or logs.
-
-**Why It’s Important:**  
-Large apps need more nuance in error handling. Categorizing errors helps developers log, alert, or recover from them properly.
-
----
-
-## 3. **Summary & Recommendations**
-
-Your OmniRequest library already has **three major advanced features**:
-
-1. **Advanced Caching & Revalidation**  
-2. **Concurrency Control & Rate Limiting**  
-3. **Intelligent Retry & Circuit Breakers**
-
-This already puts you far ahead of `fetch` and `axios` in solving common performance and reliability challenges. To further address **real-world developer pain points**, consider adding:
-
-- **Instrumentation & Tracing**: Observability is crucial in modern systems.  
-- **Dynamic Plugin System**: More flexible composition of middleware.  
-- **Automatic Auth**: Commonly needed in enterprise apps (OAuth2, JWT refresh).  
-- **Data Transformation**: Simplifies typed, validated request/response handling.  
-- **File Upload & Progress**: Another frequent pain point in real-world apps.  
-- **Advanced Error Handling**: Offer fallback endpoints, typed error categories, user-friendly messages.
-
-By focusing on these additional features, you’ll cover an even broader range of real-world scenarios, making OmniRequest a truly comprehensive, enterprise-grade HTTP client solution.
+This list represents a comprehensive, next-generation approach to API handling by combining the best features of traditional methods with innovative enhancements that directly address modern development challenges.

@@ -1,178 +1,125 @@
-// src/core/requestClient.ts
-import { RequestConfig, RequestOptions } from "../types/request";
-import { ResponseData } from "../types/response";
-import { RequestError } from "../types/error";
-import { Middleware } from "../types/middleware";
-import { getAdapter, AdapterFunction } from "../adapters";
-import { RequestInterceptorManager, ResponseInterceptorManager } from "./interceptors";
+import { RequestConfig, ResponseData, Middleware, Plugin } from "../types";
+import { MiddlewareManager } from "./middleware/middlewareManager";
+import { getAdapter } from "../adapters";
+import { createDefaultConfig } from "./config";
 
 export class RequestClient {
-  private defaults: RequestOptions = {
-    url: "",
-    method: "GET",
-    headers: {
-      "Accept": "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-    },
-    timeout: 30000,
-    validateStatus: (status: number) => status >= 200 && status < 300,
-    retries: 0,
-    responseType: "json",
-  };
+  private config: RequestConfig;
+  private middleware: MiddlewareManager;
+  private plugins: Plugin[];
 
-  private adapter: AdapterFunction;
-  private middleware: Middleware[] = [];
-
-  public interceptors = {
-    request: new RequestInterceptorManager(),
-    response: new ResponseInterceptorManager(),
-  };
-
-  /**
-   * @description Accepts a partial configuration, merges with defaults,
-   * and auto-selects an adapter for Node, browsers, Bun, or Deno.
-   */
-  constructor(config: Partial<RequestOptions> = {}) {
-    this.defaults = { ...this.defaults, ...config } as RequestOptions;
-    this.adapter = getAdapter();
+  constructor(config: RequestConfig = {}) {
+    this.config = { ...createDefaultConfig(), ...config };
+    this.middleware = new MiddlewareManager();
+    this.plugins = [];
   }
 
-  /**
-   * @description Add a middleware instance (e.g., cache, retry, timeout).
-   */
-  use(middleware: Middleware): void {
-    this.middleware.push(middleware);
-  }
-
-  /**
-   * @description Main request method that runs interceptors, middleware,
-   * and executes the request via the adapter.
-   */
   async request<T = any>(config: RequestConfig): Promise<ResponseData<T>> {
-    const mergedConfig = this.mergeConfig(this.defaults, config);
+    const finalConfig = { ...this.config, ...config };
+
     try {
-      // Run request interceptors
-      let reqConfig = await this.interceptors.request.runInterceptors(mergedConfig);
-
-      // Run middleware request hooks
-      for (const mw of this.middleware) {
-        if (mw.request) {
-          reqConfig = await mw.request(reqConfig);
+      // Apply plugins pre-request
+      for (const plugin of this.plugins) {
+        if (plugin.onRequest) {
+          finalConfig = await plugin.onRequest(finalConfig);
         }
       }
 
-      // Execute the request
-      let response = await this.adapter(reqConfig);
+      // Apply middleware pre-request
+      const modifiedConfig = await this.middleware.applyRequestMiddleware(
+        finalConfig
+      );
 
-      // Validate status
-      if (reqConfig.validateStatus && !reqConfig.validateStatus(response.status)) {
-        throw new RequestError(
-          `Request failed with status code ${response.status}`,
-          reqConfig,
-          "STATUS_ERROR",
-          undefined,
-          response
-        );
-      }
+      // Get the appropriate adapter for the current environment
+      const adapter = getAdapter();
 
-      // Run middleware response hooks
-      for (const mw of this.middleware) {
-        if (mw.response) {
-          response = await mw.response(response);
+      // Make the request
+      let response = await adapter(modifiedConfig);
+
+      // Apply middleware post-response
+      response = await this.middleware.applyResponseMiddleware(response);
+
+      // Apply plugins post-response
+      for (const plugin of this.plugins) {
+        if (plugin.onResponse) {
+          response = await plugin.onResponse(response);
         }
       }
 
-      // Run response interceptors
-      response = await this.interceptors.response.runInterceptors(response);
-      return response as ResponseData<T>;
-    } catch (error: any) {
-      let finalError = error;
+      return response;
+    } catch (error) {
+      // Handle errors through middleware and plugins
+      let processedError = error;
 
-      // Wrap non-RequestError errors
-      if (!(error instanceof RequestError)) {
-        finalError = new RequestError(
-          error.message || "Request failed",
-          mergedConfig
-        );
-      }
-
-      // Run middleware error hooks
-      for (const mw of this.middleware) {
-        if (mw.error) {
+      for (const plugin of this.plugins) {
+        if (plugin.onError) {
           try {
-            const result = await mw.error(finalError);
-            // If middleware returns a success response, return it
-            if (!(result instanceof RequestError)) {
-              return result as ResponseData<T>;
-            }
-            finalError = result;
+            processedError = await plugin.onError(processedError, finalConfig);
           } catch (e) {
-            finalError = e instanceof RequestError ? e : finalError;
+            processedError = e;
           }
         }
       }
-      throw finalError;
+
+      processedError = await this.middleware.applyErrorMiddleware(
+        processedError
+      );
+      throw processedError;
     }
   }
 
-  // Convenience methods for HTTP verbs
-
-  get<T = any>(
+  // HTTP method shortcuts
+  async get<T = any>(
     url: string,
-    config?: Omit<RequestConfig, "url" | "method">
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.request<T>({ ...config, url, method: "GET" } as RequestConfig);
+    return this.request<T>({ ...config, method: "GET", url });
   }
 
-  post<T = any>(
-    url: string,
-    data?: any,
-    config?: Omit<RequestConfig, "url" | "method">
-  ): Promise<ResponseData<T>> {
-    return this.request<T>({ ...config, url, method: "POST", data } as RequestConfig);
-  }
-
-  put<T = any>(
+  async post<T = any>(
     url: string,
     data?: any,
-    config?: Omit<RequestConfig, "url" | "method">
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.request<T>({ ...config, url, method: "PUT", data } as RequestConfig);
+    return this.request<T>({ ...config, method: "POST", url, data });
   }
 
-  patch<T = any>(
+  async put<T = any>(
     url: string,
     data?: any,
-    config?: Omit<RequestConfig, "url" | "method">
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.request<T>({ ...config, url, method: "PATCH", data } as RequestConfig);
+    return this.request<T>({ ...config, method: "PUT", url, data });
   }
 
-  delete<T = any>(
+  async delete<T = any>(
     url: string,
-    config?: Omit<RequestConfig, "url" | "method">
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.request<T>({ ...config, url, method: "DELETE" } as RequestConfig);
+    return this.request<T>({ ...config, method: "DELETE", url });
   }
 
-  /**
-   * @description Create a new client instance with merged defaults.
-   */
-  create(config: Partial<RequestOptions> = {}): RequestClient {
-    return new RequestClient({ ...this.defaults, ...config } as RequestOptions);
+  async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({ ...config, method: "PATCH", url, data });
   }
 
-  /**
-   * @description Merge defaults with user-supplied config, including headers.
-   */
-  private mergeConfig(
-    defaults: RequestOptions,
-    config: RequestConfig
-  ): RequestConfig {
-    return {
-      ...defaults,
-      ...config,
-      headers: { ...defaults.headers, ...config.headers },
-    };
+  // Plugin and middleware management
+  use(middleware: Middleware): this {
+    this.middleware.use(middleware);
+    return this;
+  }
+
+  addPlugin(plugin: Plugin): this {
+    this.plugins.push(plugin);
+    return this;
+  }
+
+  // Instance creation
+  static create(config?: RequestConfig): RequestClient {
+    return new RequestClient(config);
   }
 }

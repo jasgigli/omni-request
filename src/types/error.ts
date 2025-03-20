@@ -1,25 +1,27 @@
-// src/types/error.ts
-import { RequestConfig } from "./request";
-import { ResponseData } from "./response";
+export type ErrorType =
+  | "NETWORK_ERROR"
+  | "TIMEOUT"
+  | "CANCELED"
+  | "RESPONSE_PROCESSING_ERROR"
+  | "VALIDATION_ERROR";
+
+export interface ErrorResponse {
+  status?: number;
+  statusText?: string;
+  data?: any;
+  headers?: Record<string, string>;
+  config?: any;
+}
 
 export class RequestError extends Error {
-  config: RequestConfig;
-  code?: string;
-  request?: any;
-  response?: ResponseData;
-  isNetworkError: boolean;
-  isTimeout: boolean;
-  isCancel: boolean;
-  
-  constructor(message: string, config: RequestConfig, code?: string, request?: any, response?: ResponseData) {
+  constructor(
+    message: string,
+    public config: any,
+    public code: ErrorType,
+    public request?: any,
+    public response?: ErrorResponse
+  ) {
     super(message);
-    this.name = 'RequestError';
-    this.config = config;
-    this.code = code;
-    this.request = request;
-    this.response = response;
-    this.isNetworkError = code === 'NETWORK_ERROR';
-    this.isTimeout = code === 'TIMEOUT';
-    this.isCancel = code === 'CANCELED';
+    this.name = "RequestError";
   }
 }

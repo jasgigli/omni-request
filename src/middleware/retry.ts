@@ -1,43 +1,55 @@
-// src/middleware/retry.ts
-import { Middleware } from "../types/middleware";
-import { RequestConfig } from "../types/request";
-import { RequestError } from "../types/error";
-
-interface RetryOptions {
-  retries?: number;
-  retryDelay?: number | ((retryCount: number) => number);
-  retryCondition?: (error: RequestError) => boolean;
-}
+import { Middleware, RequestConfig, RetryOptions } from "../types";
 
 export class RetryMiddleware implements Middleware {
   private options: RetryOptions;
-  
-  constructor(options: RetryOptions = {}) {
+
+  constructor(options: RetryOptions) {
     this.options = {
-      retries: 3,
-      retryDelay: (retryCount: number) => Math.pow(2, retryCount) * 1000,
-      retryCondition: (error) =>
-        error.isNetworkError || (error.response?.status ? error.response.status >= 500 : false),
-      ...options
+      attempts: 3,
+      backoff: "exponential",
+      conditions: [(error) => error.status >= 500],
+      ...options,
     };
   }
-  
-  error = async (error: RequestError): Promise<RequestError> => {
-    const config = error.config;
-    const maxRetries = config.retries !== undefined ? config.retries : this.options.retries!;
-    const currentAttempt = config._retryCount || 0;
-    
-    if (currentAttempt >= maxRetries || !this.options.retryCondition!(error)) {
-      return error;
+
+  private async delay(attempt: number): Promise<void> {
+    const baseDelay = 1000; // 1 second
+    let delay: number;
+
+    switch (this.options.backoff) {
+      case "exponential":
+        delay = Math.pow(2, attempt) * baseDelay;
+        break;
+      case "linear":
+        delay = attempt * baseDelay;
+        break;
+      default:
+        delay = baseDelay;
     }
-    
-    const delay = typeof this.options.retryDelay === 'function'
-      ? this.options.retryDelay(currentAttempt)
-      : this.options.retryDelay!;
-    
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    const newConfig = { ...config, _retryCount: currentAttempt + 1 };
-    throw new RequestError(`Retrying request (${currentAttempt + 1}/${maxRetries})`, newConfig, 'RETRY');
+
+    return new Promise((resolve) => setTimeout(resolve, delay));
+  }
+
+  private shouldRetry(error: any, attempt: number): boolean {
+    if (attempt >= this.options.attempts) {
+      return false;
+    }
+
+    return this.options.conditions.some((condition) => condition(error));
+  }
+
+  async error(error: any, config: RequestConfig): Promise<any> {
+    let attempt = (config.retryAttempt || 0) + 1;
+
+    if (this.shouldRetry(error, attempt)) {
+      await this.delay(attempt);
+
+      return {
+        ...config,
+        retryAttempt: attempt,
+      };
+    }
+
+    throw error;
   }
 }

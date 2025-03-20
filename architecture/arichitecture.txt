@@ -59,3 +59,45 @@ omni-request/
 └── README.md                      # Documentation
 └── .gitignore
 └── LICENCE
+omni-request/
+├── src/
+│   ├── adapters/                  # Enhanced environment adapters
+│   │   ├── browser/
+│   │   │   ├── fetch.ts
+│   │   │   ├── websocket.ts      # WebSocket support
+│   │   │   └── sse.ts           # Server-Sent Events
+│   │   ├── node/
+│   │   │   ├── http.ts
+│   │   │   ├── http2.ts         # HTTP/2 support
+│   │   │   └── websocket.ts
+│   ├── core/
+│   │   ├── pipeline.ts
+│   │   ├── metrics.ts           # Performance metrics
+│   │   └── telemetry.ts         # OpenTelemetry integration
+│   ├── middleware/
+│   │   ├── advanced/
+│   │   │   ├── compression.ts    # Automatic compression
+│   │   │   ├── streaming.ts      # Streaming responses
+│   │   │   └── batch.ts         # Request batching
+│   │   ├── security/
+│   │   │   ├── encryption.ts     # End-to-end encryption
+│   │   │   ├── signature.ts      # Request signing
+│   │   │   └── audit.ts         # Security audit logging
+│   ├── plugins/
+│   │   ├── upload/              # Enhanced file upload
+│   │   │   ├── chunked.ts       # Chunked uploads
+│   │   │   └── resume.ts        # Resumable uploads
+│   │   ├── offline/             # Offline capabilities
+│   │   │   ├── sync.ts          # Offline sync
+│   │   │   └── queue.ts         # Request queue
+│   │   ├── performance/         # Performance optimizations
+│   │   │   ├── prefetch.ts      # Smart prefetching
+│   │   │   └── cache.ts         # Advanced caching
+│   ├── react/                   # Enhanced React integration
+│   │   ├── hooks/
+│   │   │   ├── useRequest.ts
+│   │   │   ├── useInfinite.ts   # Infinite scrolling
+│   │   │   └── useSubscription.ts # Real-time updates
+│   │   ├── components/
+│   │   │   ├── RequestProvider.tsx
+│   │   │   └── RequestBoundary.tsx

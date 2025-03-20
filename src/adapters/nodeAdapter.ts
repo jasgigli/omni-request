@@ -1,82 +1,93 @@
-// src/adapters/nodeAdapter.ts
 import { RequestConfig } from "../types/request";
 import { ResponseData } from "../types/response";
-import { RequestError } from "../types/error";
-import * as http from 'http';
-import * as https from 'https';
-import { URL } from 'url';
+import * as http from "http";
+import * as https from "https";
 
-export async function nodeAdapter(config: RequestConfig): Promise<ResponseData> {
+export async function nodeAdapter(
+  config: RequestConfig
+): Promise<ResponseData> {
   return new Promise((resolve, reject) => {
-    const { url, method, headers = {}, data, timeout, responseType = 'json' } = config;
-    const parsedUrl = new URL(url);
-    const isHttps = parsedUrl.protocol === 'https:';
-    const lib = isHttps ? https : http;
-    
-    const options: http.RequestOptions = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || (isHttps ? 443 : 80),
-      path: parsedUrl.pathname + parsedUrl.search,
-      method,
-      headers
-    };
-    
-    const req = lib.request(options, (res) => {
-      const responseHeaders: Record<string, string> = {};
-      Object.entries(res.headers).forEach(([key, value]) => {
-        if (key) {
-          responseHeaders[key] = Array.isArray(value) ? value.join(', ') : (value as string);
-        }
-      });
-      
-      if (responseType === 'stream') {
-        resolve({
-          data: res,
-          status: res.statusCode || 0,
-          statusText: res.statusMessage || '',
-          headers: responseHeaders,
-          config,
-          request: req
-        });
-        return;
+    try {
+      if (!config.url) {
+        throw new Error("URL is required");
       }
-      
-      let rawData = '';
-      res.on('data', chunk => rawData += chunk);
-      res.on('end', () => {
-        let processedData;
-        try {
-          processedData = responseType === 'json' ? JSON.parse(rawData) : rawData;
-        } catch (err) {
-          processedData = rawData;
-        }
-        resolve({
-          data: processedData,
-          status: res.statusCode || 0,
-          statusText: res.statusMessage || '',
-          headers: responseHeaders,
-          config,
-          request: req
+
+      const url = new URL(config.url);
+      const isHttps = url.protocol === "https:";
+      const httpModule = isHttps ? https : http;
+
+      const requestOptions: http.RequestOptions = {
+        method: config.method || "GET",
+        headers: config.headers,
+        timeout: config.timeout,
+      };
+
+      const req = httpModule.request(url, requestOptions, (res) => {
+        let data = "";
+
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        res.on("end", () => {
+          const responseHeaders: Record<string, string> = {};
+          Object.entries(res.headers).forEach(([key, value]) => {
+            if (key && value) {
+              responseHeaders[key] = Array.isArray(value)
+                ? value.join(", ")
+                : value;
+            }
+          });
+
+          const response: ResponseData = {
+            data: tryParseJSON(data),
+            status: res.statusCode || 500,
+            statusText: res.statusMessage || "",
+            headers: responseHeaders,
+            config,
+          };
+
+          if (
+            config.validateStatus?.(response.status) ??
+            (response.status >= 200 && response.status < 300)
+          ) {
+            resolve(response);
+          } else {
+            reject(new Error(`Request failed with status ${response.status}`));
+          }
         });
       });
-    });
-    
-    req.on('error', (err) => {
-      reject(new RequestError(err.message, config, 'NETWORK_ERROR', req));
-    });
-    
-    if (timeout) {
-      req.setTimeout(timeout, () => {
-        req.abort();
-        reject(new RequestError(`Timeout of ${timeout}ms exceeded`, config, 'TIMEOUT', req));
+
+      req.on("error", (error) => {
+        reject(new Error(`Request failed: ${error.message}`));
       });
+
+      if (config.data) {
+        req.write(JSON.stringify(config.data));
+      }
+
+      req.end();
+
+      if (config.signal) {
+        config.signal.addEventListener("abort", () => {
+          req.destroy();
+          reject(new Error("Request aborted"));
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        reject(new Error(`Request failed: ${error.message}`));
+      } else {
+        reject(new Error("An unknown error occurred"));
+      }
     }
-    
-    if (data) {
-      const body = typeof data === 'object' ? JSON.stringify(data) : data;
-      req.write(body);
-    }
-    
-    req.end();
   });
+}
+
+function tryParseJSON(data: string): any {
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
 }

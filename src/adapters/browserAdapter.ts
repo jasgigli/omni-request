@@ -1,68 +1,65 @@
-// src/adapters/browserAdapter.ts
 import { RequestConfig } from "../types/request";
 import { ResponseData } from "../types/response";
-import { RequestError } from "../types/error";
 
-export async function browserAdapter(config: RequestConfig): Promise<ResponseData> {
-  const { url, method, headers, data, timeout, responseType = 'json', withCredentials, cache, signal } = config;
-  let controller: AbortController | null = null;
-  let finalSignal = signal;
-  
-  if (timeout && !signal) {
-    controller = new AbortController();
-    finalSignal = controller.signal;
-    setTimeout(() => controller?.abort(), timeout);
-  }
-  
-  const fetchOptions: RequestInit = {
-    method,
-    headers,
-    body: data ? (typeof data === 'object' ? JSON.stringify(data) : data) : undefined,
-    signal: finalSignal,
-    credentials: withCredentials ? 'include' : 'same-origin',
-    cache: cache || 'default'
-  };
-  
-  let response;
+export async function browserAdapter(
+  config: RequestConfig
+): Promise<ResponseData> {
   try {
-    response = await fetch(url, fetchOptions);
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
-      throw new RequestError('Request aborted', config, 'CANCELED');
+    const {
+      url,
+      method = "GET",
+      headers,
+      data,
+      signal,
+      timeout,
+      cache = "default",
+      validateStatus = (status: number) => status >= 200 && status < 300,
+      credentials = "same-origin", // Use credentials instead of withCredentials
+    } = config;
+
+    if (!url) {
+      throw new Error("URL is required");
     }
-    throw new RequestError(err.message || 'Network Error', config, 'NETWORK_ERROR');
-  }
-  
-  let responseData;
-  try {
-    switch (responseType) {
-      case 'text':
-        responseData = await response.text();
-        break;
-      case 'blob':
-        responseData = await response.blob();
-        break;
-      case 'arraybuffer':
-        responseData = await response.arrayBuffer();
-        break;
-      default:
-        responseData = await response.json();
-        break;
+
+    const controller = new AbortController();
+    if (timeout) {
+      setTimeout(() => controller.abort(), timeout);
     }
-  } catch (e) {
-    responseData = await response.text();
+
+    const fetchSignal = signal || controller.signal;
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      signal: fetchSignal,
+      credentials, // Use the credentials option directly
+      cache: cache as RequestCache,
+    });
+
+    const responseData = await response.json();
+
+    // Convert Headers object to plain object
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+
+    if (!validateStatus(response.status)) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    return {
+      data: responseData,
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+      config,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Request failed: ${error.message}`);
+    }
+    throw error;
   }
-  
-  const responseHeaders: Record<string, string> = {};
-  response.headers.forEach((value, key) => {
-    responseHeaders[key] = value;
-  });
-  
-  return {
-    data: responseData,
-    status: response.status,
-    statusText: response.statusText,
-    headers: responseHeaders,
-    config
-  };
 }

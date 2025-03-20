@@ -1,46 +1,75 @@
-// src/plugins/auth.ts
-import { RequestClient } from "../core/requestClient";
-import { RequestConfig } from "../types/request";
+import { Plugin, RequestConfig, ResponseData } from "../types";
 
-interface AuthOptions {
-  type: 'basic' | 'bearer' | 'custom';
-  username?: string;
-  password?: string;
-  token?: string;
-  tokenType?: string;
-  header?: string;
-  value?: string | (() => string | Promise<string>);
+export interface AuthOptions {
+  type: "bearer" | "basic" | "oauth2";
+  tokens?: {
+    access?: string;
+    refresh?: string;
+  };
   refreshToken?: () => Promise<string>;
-  tokenExpiry?: number;
+  shouldRefresh?: (error: any) => boolean;
 }
 
-export function setupAuth(client: RequestClient, options: AuthOptions): void {
-  client.interceptors.request.use(async (config: RequestConfig) => {
-    const headers = { ...config.headers };
-    switch (options.type) {
-      case 'basic':
-        if (options.username && options.password) {
-          const credentials = Buffer.from(`${options.username}:${options.password}`).toString('base64');
-          headers['Authorization'] = `Basic ${credentials}`;
-        }
-        break;
-      case 'bearer':
-        let token = options.token;
-        if (options.refreshToken && options.tokenExpiry && Date.now() >= options.tokenExpiry) {
-          token = await options.refreshToken();
-          options.token = token;
-        }
-        if (token) {
-          headers['Authorization'] = `${options.tokenType || 'Bearer'} ${token}`;
-        }
-        break;
-      case 'custom':
-        if (options.value) {
-          const val = typeof options.value === 'function' ? await options.value() : options.value;
-          headers[options.header || 'Authorization'] = val;
-        }
-        break;
+export class AuthPlugin implements Plugin {
+  private options: AuthOptions;
+  private refreshPromise: Promise<string> | null = null;
+  private requestQueue: Array<() => void> = [];
+
+  constructor(options: AuthOptions) {
+    this.options = options;
+  }
+
+  private async refreshToken(): Promise<string> {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.options.refreshToken().then((token) => {
+        this.options.tokens.access = token;
+        this.refreshPromise = null;
+        this.processQueue();
+        return token;
+      });
     }
-    return { ...config, headers };
-  });
+    return this.refreshPromise;
+  }
+
+  private processQueue(): void {
+    while (this.requestQueue.length > 0) {
+      const resolve = this.requestQueue.shift();
+      resolve();
+    }
+  }
+
+  async onRequest(config: RequestConfig): Promise<RequestConfig> {
+    if (this.options.type === "bearer" && this.options.tokens?.access) {
+      return {
+        ...config,
+        headers: {
+          ...config.headers,
+          Authorization: `Bearer ${this.options.tokens.access}`,
+        },
+      };
+    }
+    return config;
+  }
+
+  async onError(error: any, config: RequestConfig): Promise<RequestConfig> {
+    if (
+      this.options.shouldRefresh?.(error) &&
+      this.options.refreshToken &&
+      !config.isRetryAfterRefresh
+    ) {
+      await new Promise<void>((resolve) => {
+        this.requestQueue.push(resolve);
+        if (this.requestQueue.length === 1) {
+          this.refreshToken();
+        }
+      });
+
+      return {
+        ...config,
+        isRetryAfterRefresh: true,
+      };
+    }
+
+    throw error;
+  }
 }

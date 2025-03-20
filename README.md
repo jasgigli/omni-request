@@ -1,371 +1,546 @@
-# OmniRequest &mdash; The Ultimate Node.js HTTP Client with Advanced Middleware
+# OmniRequest
 
-<!-- Core Project Badges -->
+<div align="center">
+  <img src="assets/omniRequest.webp" alt="OmniRequest Logo" width="200"/>
+  <h3>The Ultimate TypeScript-First HTTP Client for Modern Applications</h3>
 
 [![npm version](https://img.shields.io/npm/v/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
-[![npm downloads/total](https://img.shields.io/npm/dt/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
 [![license](https://img.shields.io/npm/l/omnirequest.svg?color=blue)](LICENSE)
-
-<!-- [![node](https://img.shields.io/node/v/omnirequest.svg?color=informational)](https://www.npmjs.com/package/omnirequest) -->
-
 [![Type definitions](https://img.shields.io/npm/types/omnirequest.svg?color=success)](https://www.npmjs.com/package/omnirequest)
-
-<!-- Popularity & Downloads -->
-
 [![npm downloads/month](https://img.shields.io/npm/dm/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
-
-<!-- CI & Build -->
-<!-- [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jasgigli/omni-request/ci.yml?label=CI&color=blueviolet)](https://github.com/jasgigli/omni-request/actions)
-[![Travis Build](https://img.shields.io/travis/jasgigli/omni-request.svg?label=Travis%20CI)](https://travis-ci.org/jasgigli/omni-request) -->
-<!-- Code Quality & Coverage -->
-<!-- [![codecov](https://codecov.io/gh/jasgigli/omni-request/branch/master/graph/badge.svg)](https://codecov.io/gh/jasgigli/omni-request)
-[![Maintainability](https://img.shields.io/codeclimate/maintainability/jasgigli/omni-request.svg?color=yellow)](https://codeclimate.com/github/jasgigli/omni-request/maintainability)
-[![Known Vulnerabilities](https://img.shields.io/snyk/vulnerabilities/github/jasgigli/omni-request.svg?color=red)](https://snyk.io/test/github/jasgigli/omni-request) -->
-<!-- Project Activity -->
-
-[![Commit Activity](https://img.shields.io/github/commit-activity/m/jasgigli/omni-request.svg?color=orange)](https://github.com/jasgigli/omni-request/commits)
-[![Last Commit](https://img.shields.io/github/last-commit/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/commits)
-
-<!-- [![Open Issues](https://img.shields.io/github/issues/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/jasgigli/omni-request.svg)](https://github.com/jasgigli/omni-request/pulls) -->
-<!-- Community & Engagement -->
-
 [![GitHub Stars](https://img.shields.io/github/stars/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/stargazers)
 
-<!-- [![GitHub Forks](https://img.shields.io/github/forks/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/network/members)
-[![GitHub Watchers](https://img.shields.io/github/watchers/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/watchers) -->
+</div>
 
-<!-- Style & Commit Conventions -->
+## 🚀 Core Features
 
-<!-- [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/) -->
+- **🔥 Universal Platform Support** - Works seamlessly in Node.js, Browsers, Deno, and Bun
+- **📦 Zero Dependencies** - Lightweight and efficient with no external dependencies
+- **🎯 TypeScript-First** - Full type safety and excellent IDE support
+- **🔌 Extensible Architecture** - Powerful middleware system for custom functionality
 
-<!-- Repository Visitors -->
-
-[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=jasgigli.omni-request)](https://github.com/jasgigli/omni-request)
-
-**OmniRequest** is a **feature‑rich HTTP client** built for Node.js (and beyond) that solves real‑world challenges like **advanced caching & revalidation**, **concurrency & rate limiting**, **intelligent retry & circuit breakers**, and **auto‑auth with token refresh**. Whether you’re developing **microservices**, **CLI tools**, or **enterprise backends**, OmniRequest’s **middleware architecture** delivers unmatched flexibility and reliability.
-
----
-
-## Table of Contents
-
-- [Key Features](#key-features)
-- [Why OmniRequest?](#why-omnirequest)
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Advanced Use Cases](#advanced-use-cases)
-  - [Caching & Revalidation](#caching--revalidation)
-  - [Concurrency & Rate Limiting](#concurrency--rate-limiting)
-  - [Intelligent Retry & Circuit Breakers](#intelligent-retry--circuit-breakers)
-  - [Auto Auth & Token Refresh](#auto-auth--token-refresh)
-- [Full Example](#full-example)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## Key Features
-
-1. **Advanced Caching & Revalidation**
-
-   - Automatically handles `ETag` / `If-Modified-Since` to reduce bandwidth
-   - Offline caching (in Node memory or IndexedDB in browsers)
-   - Hooks for cache invalidation, partial revalidation
-
-2. **Concurrency Control & Rate Limiting**
-
-   - Global or per-endpoint concurrency limits
-   - Token bucket or leaky bucket to smooth out request bursts
-   - Optional queueing & priority to handle overload gracefully
-
-3. **Intelligent Retry & Circuit Breakers**
-
-   - Exponential backoff with optional jitter to avoid retry storms
-   - Circuit breaker opens after multiple failures to fail fast
-   - Granular retry conditions (e.g., only 5xx or network errors)
-
-4. **Auto Auth & Token Refresh**
-
-   - Built-in Basic, Bearer, or OAuth2 strategies, plus custom headers
-   - Automatic token refresh upon expiry or 401 responses
-   - Callbacks for success/error events during refresh
-
-5. **Middleware & Plugin System**
-
-   - Easily compose caching, concurrency, retry, logging, etc.
-   - Fine‑grained interceptors for request, response, and error handling
-
-6. **TypeScript & ESM**
-   - Written in TypeScript for type safety
-   - Distributed as ESM for modern Node.js usage
-
----
-
-## Why OmniRequest?
-
-Traditional HTTP clients (like `fetch` or `axios`) handle basic scenarios but leave advanced requirements to manual coding. **OmniRequest** solves these **real‑world developer pain points** out of the box:
-
-- **Reduce bandwidth** with ETag caching & revalidation
-- **Protect your server** from overload with concurrency & rate limiting
-- **Improve reliability** via intelligent retry & circuit breakers
-- **Secure endpoints** with auto‑auth and token refresh
-
-By leveraging OmniRequest’s powerful middleware architecture, you can integrate these features seamlessly into your Node.js applications.
-
----
-
-## Installation
+## 📦 Installation
 
 ```bash
+# Using npm
 npm install omnirequest
+
+# Using yarn
+yarn add omnirequest
+
+# Using pnpm
+pnpm add omnirequest
 ```
 
-_(Yarn users: `yarn add omnirequest`)_
+## 🎯 Quick Start
 
----
+### Making Requests
 
-## Basic Usage
+```typescript
+import omni from "omnirequest";
 
-Here’s a minimal Node.js example performing a simple GET request:
+// Make a GET request
+omni
+  .get("/user?ID=12345")
+  .then(function (response) {
+    console.log(response.data);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
 
-```js
-import { RequestClient } from "omnirequest";
+// Make a POST request
+omni
+  .post("/user", {
+    firstName: "Fred",
+    lastName: "Flintstone",
+  })
+  .then(function (response) {
+    console.log(response.data);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
 
-const client = new RequestClient();
-
-async function fetchData() {
+// Using async/await
+async function getUser() {
   try {
-    const response = await client.get("https://dummyjson.com/user");
-    console.log("Data:", response.data);
+    const response = await omni.get("/user?ID=12345");
+    console.log(response.data);
   } catch (error) {
-    console.error("Request error:", error);
+    console.error(error);
   }
 }
-
-fetchData();
 ```
 
-- **Promise & async/await**: OmniRequest uses promises for a clean, modern API.
-- **Request Methods**: Easily call `.get()`, `.post()`, `.put()`, `.delete()`, etc.
+## 📚 Advanced Features
 
----
+### 🔄 Request Management & Optimization
 
-## Advanced Use Cases
+#### Smart Request Deduplication
 
-### Caching & Revalidation
-
-**Challenge**: Frequent requests to the same endpoint, or need to handle `ETag` to reduce bandwidth.  
-**Solution**: `RevalidationCacheMiddleware` automatically attaches `If-None-Match`, returning `304` if data is unchanged.
-
-```js
-import { RequestClient, RevalidationCacheMiddleware } from "omnirequest";
-
-const client = new RequestClient();
-client.use(
-  new RevalidationCacheMiddleware({
-    maxAge: 60_000, // skip revalidation if data is < 60s old
-    offline: false, // store in Node memory
-    onStore: (key, response) => {
-      console.log(`Cached ${key} => ETag: ${response.headers.etag || "none"}`);
-    },
-  })
-);
-
-client
-  .get("https://dummyjson.com/user")
-  .then((res) => console.log("User data:", res.data))
-  .catch((err) => console.error("Error:", err));
-```
-
-### Concurrency & Rate Limiting
-
-**Challenge**: Avoid overloading your API with too many concurrent or burst requests.  
-**Solution**: `ConcurrencyRateLimitMiddleware` sets concurrency caps and optional token bucket rate limiting.
-
-```js
-import { RequestClient, ConcurrencyRateLimitMiddleware } from "omnirequest";
-
-const client = new RequestClient();
-client.use(
-  new ConcurrencyRateLimitMiddleware({
-    globalConcurrency: 3,
-    tokenBucket: {
-      capacity: 5,
-      refillRate: 1,
-      intervalMs: 3000,
-    },
-    queue: true,
-  })
-);
-
-// Fire multiple requests; only 3 run at once, extra requests queue
-for (let i = 0; i < 10; i++) {
-  client
-    .get("https://dummyjson.com/user")
-    .then((res) => console.log(`Request #${i}: ${res.status}`))
-    .catch((err) => console.error(`Request #${i} error:`, err));
-}
-```
-
-### Intelligent Retry & Circuit Breakers
-
-**Challenge**: Endpoints might fail sporadically; you need exponential backoff. If a service is truly down, open a circuit breaker.  
-**Solution**: `IntelligentRetryMiddleware` tries each request up to `maxRetries`, uses backoff with jitter, and can open a circuit after repeated failures.
-
-```js
-import { RequestClient, IntelligentRetryMiddleware } from "omnirequest";
-
-const client = new RequestClient();
-client.use(
-  new IntelligentRetryMiddleware({
-    maxRetries: 3,
-    baseDelay: 1000,
-    jitter: true,
-    circuitBreaker: {
-      threshold: 2,
-      cooldown: 10000,
-    },
-  })
-);
-
-client
-  .get("https://dummyjson.com/user")
-  .then((res) => console.log("Data:", res.data))
-  .catch((err) => console.error("Failed after retries/circuit:", err));
-```
-
-### Auto Auth & Token Refresh
-
-**Challenge**: Managing short‑lived tokens (Bearer/OAuth2) or basic auth across multiple endpoints.  
-**Solution**: `setupAutoAuth` automatically attaches credentials, refreshes tokens on expiry/401, and replays failed requests.
-
-```js
-import { RequestClient, setupAutoAuth } from "omnirequest";
-
-const client = new RequestClient();
-
-setupAutoAuth(client, {
-  type: "bearer",
-  token: "INITIAL_TOKEN",
-  tokenExpiry: Date.now() + 60000,
-  refreshToken: async () => {
-    // call an auth server to get new token
-    return "NEW_TOKEN";
+```typescript
+const instance = omni.create({
+  deduplication: {
+    enabled: true,
+    window: 2000, // 2 seconds
+    compare: ["url", "method", "data"], // Compare criteria
+    cacheStrategy: "memory", // or "storage"
   },
-  onRefreshSuccess: (newToken) => console.log("Refreshed token =>", newToken),
-  onRefreshError: (err) => console.error("Refresh failed:", err),
 });
-
-client
-  .get("https://dummyjson.com/user")
-  .then((res) => console.log("Secured data:", res.data))
-  .catch((err) => console.error("Auth error:", err));
 ```
 
----
+#### Request Batching & Aggregation
 
-## Full Example
+```typescript
+const instance = omni.create({
+  batch: {
+    enabled: true,
+    maxSize: 10, // Maximum requests in a batch
+    delay: 50, // Delay in ms before sending batch
+    endpoints: {
+      "/api/v1/batch": {
+        method: "POST",
+        transform: (requests) => ({ batch: requests }),
+      },
+    },
+  },
+});
+```
 
-A single Node.js script using **all** advanced features together:
+#### Request Prioritization
 
-```js
-import {
-  RequestClient,
-  RevalidationCacheMiddleware,
-  ConcurrencyRateLimitMiddleware,
-  IntelligentRetryMiddleware,
-} from "omnirequest";
-import { setupAutoAuth } from "omnirequest/plugins/autoAuth";
+```typescript
+const instance = omni.create({
+  priority: {
+    enabled: true,
+    levels: {
+      critical: { weight: 100, timeout: 10000 },
+      high: { weight: 75, timeout: 5000 },
+      normal: { weight: 50, timeout: 3000 },
+      low: { weight: 25, timeout: 2000 },
+    },
+    rules: [
+      { pattern: "/api/payments/*", priority: "critical" },
+      { pattern: "/api/analytics/*", priority: "low" },
+    ],
+  },
+});
+```
 
-const client = new RequestClient({ timeout: 5000 });
+### 🛡️ Reliability & Resilience
 
-// 1. Caching & Revalidation
-client.use(new RevalidationCacheMiddleware({ maxAge: 30000, offline: false }));
+#### Advanced Circuit Breaker
 
-// 2. Concurrency & Rate Limiting
-client.use(
-  new ConcurrencyRateLimitMiddleware({
-    globalConcurrency: 3,
-    tokenBucket: { capacity: 5, refillRate: 1, intervalMs: 3000 },
-    queue: true,
-  })
-);
+```typescript
+const instance = omni.create({
+  circuitBreaker: {
+    enabled: true,
+    thresholds: {
+      failures: 5,
+      timeout: "60s",
+      successRate: 0.5,
+    },
+    states: {
+      closed: { maxRequests: Infinity },
+      halfOpen: { maxRequests: 10, duration: "30s" },
+      open: { duration: "60s" },
+    },
+    monitoring: {
+      metrics: ["latency", "errorRate", "requestCount"],
+      callback: (metrics) => logMetrics(metrics),
+    },
+  },
+});
+```
 
-// 3. Intelligent Retry & Circuit Breakers
-client.use(
-  new IntelligentRetryMiddleware({
-    maxRetries: 3,
-    baseDelay: 1000,
-    jitter: true,
-    circuitBreaker: { threshold: 2, cooldown: 10000 },
-  })
-);
+#### Intelligent Retry Strategy
 
-// 4. Auto Auth & Token Refresh
-setupAutoAuth(client, {
-  type: "bearer",
-  token: "INITIAL_TOKEN",
-  tokenExpiry: Date.now() + 60000,
-  refreshToken: async () => "NEW_TOKEN",
+```typescript
+const instance = omni.create({
+  retry: {
+    enabled: true,
+    strategies: {
+      network: {
+        conditions: ["offline", "slow-connection"],
+        backoff: "exponential",
+        maxAttempts: 5,
+      },
+      status: {
+        codes: [429, 503, 504],
+        backoff: (attempt) => Math.pow(2, attempt) * 1000,
+        maxAttempts: 3,
+      },
+      custom: {
+        condition: (error) => error.response?.data?.retryable === true,
+        backoff: "fixed",
+        delay: 1000,
+      },
+    },
+    events: {
+      onRetry: (error, attempt) => logRetryAttempt(error, attempt),
+      onSuccess: (response, attempts) => logRetrySuccess(response, attempts),
+      onFail: (error, attempts) => logRetryFailure(error, attempts),
+    },
+  },
+});
+```
+
+### 📦 Caching & Storage
+
+#### Advanced Caching System
+
+```typescript
+const instance = omni.create({
+  cache: {
+    strategy: "predictive",
+    storage: {
+      type: "multi-level",
+      levels: [
+        { type: "memory", size: "100MB" },
+        { type: "indexedDB", size: "1GB" },
+        { type: "filesystem", size: "10GB" },
+      ],
+    },
+    prefetch: {
+      links: true,
+      patterns: ["/api/user/:id/*"],
+      conditions: {
+        connection: "4g",
+        battery: { min: 0.2 },
+      },
+    },
+    revalidation: {
+      background: true,
+      interval: "5m",
+      staleWhileRevalidate: true,
+      conditionalGet: true,
+    },
+    compression: {
+      enabled: true,
+      algorithm: "brotli",
+      threshold: "1KB",
+    },
+  },
+});
+```
+
+### 🔐 Security & Authentication
+
+#### Enhanced Authentication
+
+```typescript
+const instance = omni.create({
+  auth: {
+    type: "oauth2",
+    tokens: {
+      access: localStorage.getItem("access_token"),
+      refresh: localStorage.getItem("refresh_token"),
+    },
+    refresh: {
+      auto: true,
+      threshold: "5m",
+      retry: true,
+      queue: true,
+      backoff: "exponential",
+    },
+    multiAuth: {
+      enabled: true,
+      strategies: {
+        api: "bearer",
+        storage: "aws-signature",
+        analytics: "api-key",
+      },
+    },
+    sessionManagement: {
+      enabled: true,
+      timeout: "30m",
+      keepAlive: true,
+      singleSession: true,
+    },
+  },
+});
+```
+
+#### Security Features
+
+```typescript
+const instance = omni.create({
+  security: {
+    encryption: {
+      enabled: true,
+      algorithm: "AES-256-GCM",
+      keyManagement: "auto",
+    },
+    headers: {
+      hsts: true,
+      csp: true,
+      xssProtection: true,
+    },
+    sanitization: {
+      input: true,
+      output: true,
+      sql: true,
+    },
+    rateLimit: {
+      enabled: true,
+      max: 100,
+      window: "1m",
+      strategy: "token-bucket",
+    },
+  },
+});
+```
+
+### 📱 Offline & Mobile Support
+
+#### Advanced Offline Capabilities
+
+```typescript
+const instance = omni.create({
+  offline: {
+    enabled: true,
+    storage: {
+      type: "indexedDB",
+      encryption: true,
+      compression: true,
+    },
+    sync: {
+      auto: true,
+      strategy: "background",
+      conflict: {
+        resolution: "client-wins",
+        detection: "version-vector",
+        merge: "custom",
+      },
+      queue: {
+        priority: true,
+        persistence: true,
+        retry: true,
+      },
+    },
+    networkDetection: {
+      mode: "adaptive",
+      timeout: 5000,
+      interval: "1m",
+    },
+  },
+});
+```
+
+### 📊 Monitoring & Debugging
+
+#### Comprehensive Monitoring
+
+```typescript
+const instance = omni.create({
+  monitoring: {
+    metrics: {
+      enabled: true,
+      capture: ["timing", "size", "cache", "errors", "memory"],
+      aggregation: {
+        window: "1m",
+        types: ["avg", "p95", "p99"],
+      },
+      export: {
+        format: "prometheus",
+        endpoint: "/metrics",
+      },
+    },
+    logging: {
+      level: "debug",
+      format: "json",
+      correlation: true,
+      redaction: ["password", "token"],
+      persistence: {
+        enabled: true,
+        rotation: "1d",
+      },
+    },
+    tracing: {
+      enabled: true,
+      distributed: true,
+      sampling: 0.1,
+      exporters: ["jaeger", "zipkin"],
+    },
+    alerts: {
+      conditions: [
+        { metric: "errorRate", threshold: 0.1, window: "5m" },
+        { metric: "latency", threshold: 1000, window: "1m" },
+      ],
+      channels: ["slack", "email"],
+    },
+  },
+});
+```
+
+### Creating an Instance
+
+```typescript
+const instance = omni.create({
+  baseURL: "https://api.example.com",
+  timeout: 5000,
+  headers: { "X-Custom-Header": "foobar" },
 });
 
-async function main() {
-  try {
-    const response = await client.get("https://dummyjson.com/user");
-    console.log("User info:", response.data);
-  } catch (err) {
-    console.error("Request error:", err);
-  }
+// The instance will now use the custom configuration
+instance.get("/user/12345");
+```
+
+### Request Configuration
+
+```typescript
+// Send a POST request
+omni({
+  method: "post",
+  url: "/user/12345",
+  data: {
+    firstName: "Fred",
+    lastName: "Flintstone",
+  },
+});
+
+// GET request with query parameters
+omni({
+  method: "get",
+  url: "/user",
+  params: {
+    ID: 12345,
+  },
+});
+```
+
+### Response Schema
+
+```typescript
+{
+  // `data` is the response that was provided by the server
+  data: {},
+
+  // `status` is the HTTP status code
+  status: 200,
+
+  // `statusText` is the HTTP status message
+  statusText: 'OK',
+
+  // `headers` the HTTP headers
+  headers: {},
+
+  // `config` is the config that was provided to `omni` for the request
+  config: {},
 }
-
-main();
 ```
 
----
+### Advanced Features
 
-## Architecture
+#### Request Interceptors
 
+```typescript
+// Add a request interceptor
+omni.interceptors.request.use(
+  function (config) {
+    // Do something before request is sent
+    return config;
+  },
+  function (error) {
+    // Do something with request error
+    return Promise.reject(error);
+  }
+);
 ```
-omnirequest/
-├── src/
-│   ├── adapters/           # Node/Bun/Deno-specific adapters
-│   ├── core/               # Core request pipeline & interceptors
-│   ├── middleware/         # Pluggable modules (cache, concurrency, retry, transform)
-│   ├── plugins/            # Specialized plugins (autoAuth, logging, etc.)
-│   └── types/              # TypeScript definitions
-└── ...
+
+#### Response Interceptors
+
+```typescript
+// Add a response interceptor
+omni.interceptors.response.use(
+  function (response) {
+    // Any status code within the range of 2xx
+    return response;
+  },
+  function (error) {
+    // Any status codes outside the range of 2xx
+    return Promise.reject(error);
+  }
+);
 ```
 
-- **Core**: The heart of OmniRequest, handling request orchestration.
-- **Middleware**: Extend or modify behavior (caching, concurrency, retry).
-- **Plugins**: Add specialized functionality (auto auth, logging).
-- **Interceptors**: Fine-grained hooks for request, response, and error.
+#### Automatic Token Refresh
+
+```typescript
+const instance = omni.create({
+  baseURL: "https://api.example.com",
+  auth: {
+    getToken: () => localStorage.getItem("token"),
+    refreshToken: async () => {
+      const response = await omni.post("/refresh");
+      return response.data.token;
+    },
+    shouldRefresh: (error) => error.response?.status === 401,
+  },
+});
+```
+
+#### Caching
+
+```typescript
+const instance = omni.create({
+  baseURL: "https://api.example.com",
+  cache: {
+    enable: true,
+    ttl: 60000, // 1 minute
+    strategy: "stale-while-revalidate",
+  },
+});
+```
+
+#### Retry Logic
+
+```typescript
+const instance = omni.create({
+  baseURL: "https://api.example.com",
+  retry: {
+    attempts: 3,
+    backoff: "exponential",
+    conditions: [(error) => error.status === 503],
+  },
+});
+```
+
+#### Circuit Breaker
+
+```typescript
+const instance = omni.create({
+  baseURL: "https://api.example.com",
+  circuitBreaker: {
+    failureThreshold: 5,
+    resetTimeout: 60000,
+    monitoredErrors: [500, 503],
+  },
+});
+```
+
+### React Integration
+
+```typescript
+import { useOmni } from "omnirequest/react";
+
+function UserProfile({ userId }) {
+  const { data, loading, error } = useOmni(`/users/${userId}`);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>Hello, {data.name}!</div>;
+}
+```
+
+## 📝 License
+
+[MIT](LICENSE)
 
 ---
 
-## Contributing
-
-We love community contributions! Here’s how to help:
-
-1. **Fork the Repo**
-2. **Create a Feature Branch**
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
-3. **Commit & Push**
-4. **Open a Pull Request** on GitHub
-
-Check out [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
-
-## License
-
-OmniRequest is open‑source under the [MIT License](LICENSE).  
-Use it freely for your Node.js or cross‑platform projects!
-
----
-
-**Ready to streamline your Node.js HTTP calls?** Install OmniRequest now and discover a more reliable, efficient, and secure way to handle API requests. If you have questions or need support, please open an issue or pull request. Happy coding!
+<div align="center">
+  Made with ❤️ by <a href="https://github.com/jasgigli">Junaid Ali Shah Gigli</a>
+</div>

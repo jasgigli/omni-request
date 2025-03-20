@@ -4,7 +4,9 @@ import { ResponseData } from "./response";
 import { RequestError } from "./error";
 
 export interface Middleware {
-  request?: (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
-  response?: (response: ResponseData) => ResponseData | Promise<ResponseData>;
-  error?: (error: RequestError) => RequestError | Promise<RequestError> | ResponseData | Promise<ResponseData>;
+  request?: (config: RequestConfig) => Promise<RequestConfig> | RequestConfig;
+  response?: (response: ResponseData) => Promise<ResponseData> | ResponseData;
+  error?: (
+    error: RequestError
+  ) => Promise<ResponseData | RequestError> | ResponseData | RequestError;
 }

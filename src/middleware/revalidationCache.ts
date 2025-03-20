@@ -1,23 +1,26 @@
-// src/middleware/revalidationCache.ts
 import { Middleware } from "../types/middleware";
 import { RequestConfig } from "../types/request";
 import { ResponseData } from "../types/response";
-import { isBrowser, isIndexedDBAvailable, storeOfflineData, getOfflineData } from "../core/utils/offlineDB";
+import {
+  isBrowser,
+  isIndexedDBAvailable,
+  storeOfflineData,
+  getOfflineData,
+} from "../core/utils/offlineDB";
+import { createStorage } from "../utils/storage";
 
-/**
- * Configuration options for the advanced revalidation cache.
- */
 export interface RevalidationCacheOptions {
   maxAge?: number;
   offline?: boolean;
   getCacheKey?: (config: RequestConfig) => string;
   onStore?: (key: string, response: ResponseData) => void;
   onOffline?: (key: string, data: any) => void;
+  ttl: number;
+  staleWhileRevalidate?: boolean;
+  revalidateOnFocus?: boolean;
+  revalidateOnReconnect?: boolean;
 }
 
-/**
- * Export the CacheEntry interface so offlineDB.ts can import it.
- */
 export interface CacheEntry {
   data: ResponseData;
   etag?: string;
@@ -25,13 +28,11 @@ export interface CacheEntry {
   timestamp: number;
 }
 
-/**
- * RevalidationCacheMiddleware implements ETag/Last-Modified logic
- * and can store data offline in IndexedDB (or fallback memory).
- */
 export class RevalidationCacheMiddleware implements Middleware {
   private cache = new Map<string, CacheEntry>();
   private options: RevalidationCacheOptions;
+  private storage = createStorage("memory");
+  private revalidating = new Set<string>();
 
   constructor(options: RevalidationCacheOptions = {}) {
     this.options = {
@@ -40,6 +41,54 @@ export class RevalidationCacheMiddleware implements Middleware {
       getCacheKey: (config) => config.url,
       ...options,
     };
+    if (options.revalidateOnFocus) {
+      this.setupFocusListener();
+    }
+    if (options.revalidateOnReconnect) {
+      this.setupReconnectListener();
+    }
+  }
+
+  private setupFocusListener() {
+    if (typeof window === "undefined") return;
+
+    window.addEventListener("focus", () => {
+      this.revalidateAll();
+    });
+  }
+
+  private setupReconnectListener() {
+    if (typeof window === "undefined") return;
+
+    window.addEventListener("online", () => {
+      this.revalidateAll();
+    });
+  }
+
+  private async revalidateAll() {
+    const keys = await this.storage.keys();
+    keys.forEach((key) => this.revalidate(key));
+  }
+
+  private async revalidate(key: string) {
+    if (this.revalidating.has(key)) return;
+    this.revalidating.add(key);
+
+    try {
+      const cached = await this.storage.get(key);
+      if (!cached) return;
+
+      const response = await fetch(cached.config.url, cached.config);
+      const data = await response.json();
+
+      await this.storage.set(key, {
+        ...cached,
+        data,
+        timestamp: Date.now(),
+      });
+    } finally {
+      this.revalidating.delete(key);
+    }
   }
 
   request = async (config: RequestConfig): Promise<RequestConfig> => {
@@ -59,7 +108,10 @@ export class RevalidationCacheMiddleware implements Middleware {
         config.headers = { ...config.headers, "If-None-Match": entry.etag };
       }
       if (entry.lastModified) {
-        config.headers = { ...config.headers, "If-Modified-Since": entry.lastModified };
+        config.headers = {
+          ...config.headers,
+          "If-Modified-Since": entry.lastModified,
+        };
       }
     }
     return config;
@@ -82,12 +134,17 @@ export class RevalidationCacheMiddleware implements Middleware {
 
     // 200 => Update cache
     if (response.status === 200) {
-      const etag = response.headers["etag"];
-      const lastModified = response.headers["last-modified"];
+      const headers = response.headers;
+      const etag = headers["etag"];
+      const lastModified = headers["last-modified"];
+
+      // Ensure etag and lastModified are strings
       const newEntry: CacheEntry = {
         data: response,
-        etag,
-        lastModified,
+        etag: Array.isArray(etag) ? etag[0] : etag,
+        lastModified: Array.isArray(lastModified)
+          ? lastModified[0]
+          : lastModified,
         timestamp: Date.now(),
       };
 
@@ -114,7 +171,7 @@ export class RevalidationCacheMiddleware implements Middleware {
       if (this.options.onOffline) {
         this.options.onOffline(key, entry.data);
       }
-      return entry.data; // Return as a successful response
+      return entry.data;
     }
     return error;
   };

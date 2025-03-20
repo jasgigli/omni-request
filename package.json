@@ -1,6 +1,6 @@
 {
   "name": "omnirequest",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "description": "A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.",
   "keywords": [
@@ -50,21 +50,30 @@
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
   },
   "scripts": {
-    "build": "rollup -c"
+    "prebuild": "rimraf dist",
+    "build": "rollup -c",
+    "lint": "eslint 'src/**/*.{js,ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{js,ts,tsx}' --fix",
+    "type-check": "tsc --noEmit",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^6.1.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.5",
     "@types/react": "^18.0.0",
-    "eslint": "^9.21.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "eslint-import-resolver-typescript": "^3.0.0",
+    "eslint-plugin-import": "^2.25.0",
     "rollup": "^4.34.8",
     "rollup-plugin-typescript2": "^0.36.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "idb": "^8.0.2",
-    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
+    "idb": "^8.0.2"
   },
   "files": [
     "dist/",

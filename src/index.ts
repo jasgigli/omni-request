@@ -1,13 +1,5 @@
-// src/index.ts
-import { RequestClient } from "./core/requestClient";
-import * as Adapters from "./adapters";
-import * as Middleware from "./middleware";
-import * as Plugins from "./plugins";
-import * as Integrations from "./integrations";
-import * as Types from "./types";
+import omni from "./factory.js";
+export default omni;
 
-export { RequestClient, Adapters, Middleware, Plugins, Integrations, Types };
-export { RevalidationCacheMiddleware } from "./middleware/revalidationCache";
-export { ConcurrencyRateLimitMiddleware } from "./middleware/concurrencyRateLimit";
-export { IntelligentRetryMiddleware } from "./middleware/intelligentRetry";
-export { setupAutoAuth } from "./plugins/autoAuth";
+export { RequestClient } from "./core/requestClient.js";
+export type { RequestConfig, RequestResponse } from "./types/request.js";

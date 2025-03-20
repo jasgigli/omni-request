@@ -1,29 +1,42 @@
-const json = require('@rollup/plugin-json');
-const typescript = require('rollup-plugin-typescript2');
-const pkg = require('./package.json');
+const json = require("@rollup/plugin-json");
+const typescript = require("rollup-plugin-typescript2");
+const pkg = require("./package.json");
 
 module.exports = {
-  input: 'src/index.ts',
+  input: "src/index.ts",
   output: [
     {
       file: pkg.main,
-      format: 'cjs',
+      format: "cjs",
       sourcemap: true,
-      exports: 'named'
+      exports: "named",
     },
     {
       file: pkg.module,
-      format: 'esm',
+      format: "esm",
       sourcemap: true,
     },
   ],
-  plugins: [json(), typescript({ tsconfig: "./tsconfig.json",clean: true, })],
+  plugins: [
+    json(),
+    typescript({
+      tsconfig: "./tsconfig.json",
+      clean: true,
+      useTsconfigDeclarationDir: true,
+      tsconfigOverride: {
+        compilerOptions: {
+          module: "ESNext",
+          moduleResolution: "Node",
+        },
+      },
+    }),
+  ],
   external: [
     ...Object.keys(pkg.dependencies || {}),
     "http",
     "https",
     "url",
     "react",
-    "react/jsx-runtime"
+    "react/jsx-runtime",
   ],
 };
