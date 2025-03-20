@@ -1,12 +1,15 @@
-// src/types/middleware.ts
-import { RequestConfig } from "./request";
-import { ResponseData } from "./response";
-import { RequestError } from "./error";
+import type { RequestConfig } from "./request";
+import type { ResponseData } from "./response";
 
-export interface Middleware {
-  request?: (config: RequestConfig) => Promise<RequestConfig> | RequestConfig;
-  response?: (response: ResponseData) => Promise<ResponseData> | ResponseData;
-  error?: (
-    error: RequestError
-  ) => Promise<ResponseData | RequestError> | ResponseData | RequestError;
+export interface MiddlewareFunction {
+  (config: RequestConfig): Promise<RequestConfig>;
+}
+
+export interface ResponseMiddlewareFunction {
+  (response: ResponseData): Promise<ResponseData>;
+}
+
+export interface MiddlewareManager {
+  request: MiddlewareFunction[];
+  response: ResponseMiddlewareFunction[];
 }

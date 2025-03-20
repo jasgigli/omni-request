@@ -8,5 +8,7 @@ export interface ResponseData<T = any> {
   config: RequestConfig;
 }
 
-// Use the ErrorResponse from error.ts instead of defining it here
-export { ErrorResponse } from "./error";
+// Use a different name to avoid conflict
+export interface ApiErrorResponse extends ErrorResponse {
+  response?: ResponseData;
+}

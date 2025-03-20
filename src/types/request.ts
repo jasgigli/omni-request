@@ -86,12 +86,15 @@ export interface RequestOptions {
 }
 
 export interface RequestConfig {
+  url?: string;
+  method?: string;
   baseURL?: string;
-  timeout?: number;
   headers?: Record<string, string>;
+  params?: Record<string, any>;
+  data?: any;
+  timeout?: number;
   validateStatus?: (status: number) => boolean;
   responseType?: "json" | "text" | "blob" | "arraybuffer";
-  [key: string]: any;
 }
 
 export interface RequestResponse<T = any> {
@@ -129,11 +132,10 @@ export interface ProgressEvent {
   progress: number;
 }
 
-export interface ErrorResponse extends Error {
-  config: RequestConfig;
+export interface ErrorResponse {
+  message: string;
   code?: string;
-  request?: any;
-  response?: RequestResponse;
+  config?: RequestConfig;
   status?: number;
 }
 

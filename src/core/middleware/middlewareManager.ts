@@ -1,49 +1,28 @@
-import { Middleware, RequestConfig, ResponseData } from '../../types';
+import type { RequestConfig } from "../../types/request";
+import type { ResponseData } from "../../types/response";
+import type {
+  MiddlewareFunction,
+  ResponseMiddlewareFunction,
+  MiddlewareManager,
+} from "../../types/middleware";
 
-export class MiddlewareManager {
-  private middleware: Middleware[] = [];
-
-  use(middleware: Middleware): void {
-    this.middleware.push(middleware);
-  }
+export class MiddlewareManager implements MiddlewareManager {
+  request: MiddlewareFunction[] = [];
+  response: ResponseMiddlewareFunction[] = [];
 
   async applyRequestMiddleware(config: RequestConfig): Promise<RequestConfig> {
-    let currentConfig = { ...config };
-
-    for (const middleware of this.middleware) {
-      if (middleware.request) {
-        currentConfig = await middleware.request(currentConfig);
-      }
+    let finalConfig = { ...config };
+    for (const middleware of this.request) {
+      finalConfig = await middleware(finalConfig);
     }
-
-    return currentConfig;
+    return finalConfig;
   }
 
   async applyResponseMiddleware(response: ResponseData): Promise<ResponseData> {
-    let currentResponse = { ...response };
-
-    for (const middleware of this.middleware) {
-      if (middleware.response) {
-        currentResponse = await middleware.response(currentResponse);
-      }
+    let finalResponse = { ...response };
+    for (const middleware of this.response) {
+      finalResponse = await middleware(finalResponse);
     }
-
-    return currentResponse;
-  }
-
-  async applyErrorMiddleware(error: any): Promise<any> {
-    let currentError = error;
-
-    for (const middleware of this.middleware) {
-      if (middleware.error) {
-        try {
-          currentError = await middleware.error(currentError);
-        } catch (e) {
-          currentError = e;
-        }
-      }
-    }
-
-    return currentError;
+    return finalResponse;
   }
 }

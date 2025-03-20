@@ -1,3 +1,6 @@
+import type { RequestConfig } from "./request";
+import type { ResponseData } from "./response";
+
 export * from "./request";
 export * from "./response";
 
