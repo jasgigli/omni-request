@@ -23,4 +23,6 @@ export function selectAdapter() {
   return browserAdapter; // Default to browser adapter
 }
 
+export const getAdapter = selectAdapter;
+
 export type RequestAdapter = (config: RequestConfig) => Promise<any>;

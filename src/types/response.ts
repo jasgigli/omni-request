@@ -1,4 +1,4 @@
-import { RequestConfig } from "./request";
+import type { RequestConfig } from "./request";
 
 export interface ResponseData<T = any> {
   data: T;

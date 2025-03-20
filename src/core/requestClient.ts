@@ -15,7 +15,7 @@ export class RequestClient {
   }
 
   async request<T = any>(config: RequestConfig): Promise<ResponseData<T>> {
-    const finalConfig = { ...this.config, ...config };
+    let finalConfig = { ...this.config, ...config };
 
     try {
       // Apply plugins pre-request
@@ -48,23 +48,7 @@ export class RequestClient {
 
       return response;
     } catch (error) {
-      // Handle errors through middleware and plugins
-      let processedError = error;
-
-      for (const plugin of this.plugins) {
-        if (plugin.onError) {
-          try {
-            processedError = await plugin.onError(processedError, finalConfig);
-          } catch (e) {
-            processedError = e;
-          }
-        }
-      }
-
-      processedError = await this.middleware.applyErrorMiddleware(
-        processedError
-      );
-      throw processedError;
+      throw error;
     }
   }
 

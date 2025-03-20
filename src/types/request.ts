@@ -86,27 +86,12 @@ export interface RequestOptions {
 }
 
 export interface RequestConfig {
-  url?: string;
-  method?: HttpMethod;
   baseURL?: string;
-  headers?: Record<string, string>;
-  params?: any;
-  data?: any;
   timeout?: number;
-  timeoutErrorMessage?: string;
-  withCredentials?: boolean;
-  auth?: {
-    username: string;
-    password: string;
-  };
-  responseType?: ResponseType;
-  signal?: AbortSignal;
+  headers?: Record<string, string>;
   validateStatus?: (status: number) => boolean;
-  transformRequest?: ((data: any, headers: Record<string, string>) => any)[];
-  transformResponse?: ((data: any) => any)[];
-  paramsSerializer?: (params: any) => string;
-  onUploadProgress?: (progressEvent: any) => void;
-  onDownloadProgress?: (progressEvent: any) => void;
+  responseType?: "json" | "text" | "blob" | "arraybuffer";
+  [key: string]: any;
 }
 
 export interface RequestResponse<T = any> {
