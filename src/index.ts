@@ -1,8 +1,19 @@
-export * from "./types/middleware";
-export * from "./types/request";
-export * from "./types/response";
-export * from "./types/error";
+import { RequestClient } from "./core/requestClient";
+import { defaultConfig } from "./config/defaults";
+import type { RequestConfig } from "./types/request";
+import type { HttpMethod } from "./types/http";
 
-export { RequestClient } from "./core/requestClient";
-export { MiddlewareManager } from "./core/middleware/middlewareManager";
-export { default } from "./factory";
+class OmniRequest extends RequestClient {
+  static create(config: Partial<RequestConfig> = {}) {
+    return new RequestClient({ ...defaultConfig, ...config });
+  }
+
+  static defaults = defaultConfig;
+}
+
+// Create default instance
+const omni = new OmniRequest(defaultConfig);
+
+// Export both default and named exports
+export { HttpMethod, RequestConfig, OmniRequest, omni };
+export default omni;

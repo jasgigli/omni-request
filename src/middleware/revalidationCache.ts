@@ -1,50 +1,67 @@
 import { Middleware } from "../types/middleware";
 import { RequestConfig } from "../types/request";
 import { ResponseData } from "../types/response";
+import { CacheEntry, CacheOptions, CacheStrategy } from "../types/cache";
 import {
   isBrowser,
   isIndexedDBAvailable,
   storeOfflineData,
   getOfflineData,
 } from "../core/utils/offlineDB";
-import { createStorage } from "../utils/storage";
+import { createStorage, Storage } from "../utils/storage";
 
-export interface RevalidationCacheOptions {
-  maxAge?: number;
+export interface RevalidationCacheOptions extends CacheOptions {
   offline?: boolean;
   getCacheKey?: (config: RequestConfig) => string;
   onStore?: (key: string, response: ResponseData) => void;
   onOffline?: (key: string, data: any) => void;
-  ttl: number;
   staleWhileRevalidate?: boolean;
   revalidateOnFocus?: boolean;
   revalidateOnReconnect?: boolean;
 }
 
-export interface CacheEntry {
-  data: ResponseData;
-  etag?: string;
-  lastModified?: string;
-  timestamp: number;
-}
-
 export class RevalidationCacheMiddleware implements Middleware {
   private cache = new Map<string, CacheEntry>();
-  private options: RevalidationCacheOptions;
-  private storage = createStorage("memory");
+  private options: Required<RevalidationCacheOptions>;
+  private storage: Storage;
   private revalidating = new Set<string>();
 
   constructor(options: RevalidationCacheOptions = {}) {
     this.options = {
+      // CacheOptions properties
+      ttl: 60000, // 1 minute default
+      strategy: CacheStrategy.MEMORY,
+      enabled: true,
       maxAge: 0,
+      maxEntries: 100,
+
+      // RevalidationCacheOptions properties
       offline: false,
-      getCacheKey: (config) => config.url,
+      staleWhileRevalidate: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      getCacheKey: (config: RequestConfig): string => {
+        const { url, method, params, data } = config;
+        if (!url) throw new Error("URL is required for cache key generation");
+
+        const queryString = params
+          ? `?${new URLSearchParams(params).toString()}`
+          : "";
+        const dataString = data ? JSON.stringify(data) : "";
+
+        return `${method || "GET"}-${url}${queryString}${dataString}`;
+      },
+      onStore: () => {},
+      onOffline: () => {},
       ...options,
-    };
-    if (options.revalidateOnFocus) {
+    } as Required<RevalidationCacheOptions>;
+
+    this.storage = createStorage("memory");
+
+    if (this.options.revalidateOnFocus) {
       this.setupFocusListener();
     }
-    if (options.revalidateOnReconnect) {
+    if (this.options.revalidateOnReconnect) {
       this.setupReconnectListener();
     }
   }

@@ -1,9 +1,11 @@
-import { Plugin, RequestConfig, ResponseData } from "../types";
+import { Plugin } from "../types/plugin";
+import { RequestConfig } from "../types/request";
+import { ResponseData } from "../types/response";
 
 export interface AuthOptions {
   type: "bearer" | "basic" | "oauth2";
-  tokens?: {
-    access?: string;
+  tokens: {
+    access: string;
     refresh?: string;
   };
   refreshToken?: () => Promise<string>;
@@ -11,6 +13,8 @@ export interface AuthOptions {
 }
 
 export class AuthPlugin implements Plugin {
+  public name = "auth";
+  public enabled = true;
   private options: AuthOptions;
   private refreshPromise: Promise<string> | null = null;
   private requestQueue: Array<() => void> = [];
@@ -20,13 +24,18 @@ export class AuthPlugin implements Plugin {
   }
 
   private async refreshToken(): Promise<string> {
-    if (!this.refreshPromise) {
+    if (!this.refreshPromise && this.options.refreshToken) {
       this.refreshPromise = this.options.refreshToken().then((token) => {
-        this.options.tokens.access = token;
+        if (this.options.tokens) {
+          this.options.tokens.access = token;
+        }
         this.refreshPromise = null;
         this.processQueue();
         return token;
       });
+    }
+    if (!this.refreshPromise) {
+      throw new Error("No refresh token handler available");
     }
     return this.refreshPromise;
   }
@@ -34,7 +43,9 @@ export class AuthPlugin implements Plugin {
   private processQueue(): void {
     while (this.requestQueue.length > 0) {
       const resolve = this.requestQueue.shift();
-      resolve();
+      if (resolve) {
+        resolve();
+      }
     }
   }
 
@@ -51,7 +62,8 @@ export class AuthPlugin implements Plugin {
     return config;
   }
 
-  async onError(error: any, config: RequestConfig): Promise<RequestConfig> {
+  async onError(error: any): Promise<any> {
+    const config = error.config as RequestConfig;
     if (
       this.options.shouldRefresh?.(error) &&
       this.options.refreshToken &&
@@ -60,7 +72,10 @@ export class AuthPlugin implements Plugin {
       await new Promise<void>((resolve) => {
         this.requestQueue.push(resolve);
         if (this.requestQueue.length === 1) {
-          this.refreshToken();
+          this.refreshToken().catch(() => {
+            // Handle refresh failure
+            this.processQueue();
+          });
         }
       });
 

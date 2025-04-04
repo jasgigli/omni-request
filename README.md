@@ -34,43 +34,40 @@ pnpm add omnirequest
 
 ## 🎯 Quick Start
 
+### Import the Library
+
+```typescript
+// ESM
+import { OmniRequest } from "omnirequest";
+
+// CommonJS
+const { OmniRequest } = require("omnirequest");
+```
+
 ### Making Requests
 
 ```typescript
-import omni from "omnirequest";
+// Create a new instance of OmniRequest
+const client = new OmniRequest();
 
-// Make a GET request
-omni
-  .get("/user?ID=12345")
-  .then(function (response) {
-    console.log(response.data);
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+// Simple GET request
+const response = await client.request({
+  method: "GET",
+  url: "https://dummyjson.com/products",
+});
 
-// Make a POST request
-omni
-  .post("/user", {
-    firstName: "Fred",
-    lastName: "Flintstone",
-  })
-  .then(function (response) {
-    console.log(response.data);
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+// POST request with data
+const response = await client.request({
+  method: "POST",
+  url: "https://dummyjson.com/products",
+  data: {
+    name: "John Doe",
+    email: "john@example.com",
+  },
+});
 
-// Using async/await
-async function getUser() {
-  try {
-    const response = await omni.get("/user?ID=12345");
-    console.log(response.data);
-  } catch (error) {
-    console.error(error);
-  }
-}
+// Access the response data
+console.log(response.data);
 ```
 
 ## 📚 Advanced Features
@@ -377,22 +374,29 @@ const instance = omni.create({
 ### Creating an Instance
 
 ```typescript
-const instance = omni.create({
-  baseURL: "https://api.example.com",
+// Create a new instance with custom configuration
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
   timeout: 5000,
   headers: { "X-Custom-Header": "foobar" },
 });
 
 // The instance will now use the custom configuration
-instance.get("/user/12345");
+const response = await client.request({
+  method: "GET",
+  url: "/user/12345",
+});
 ```
 
 ### Request Configuration
 
 ```typescript
+// Create a client instance
+const client = new OmniRequest();
+
 // Send a POST request
-omni({
-  method: "post",
+const postResponse = await client.request({
+  method: "POST",
   url: "/user/12345",
   data: {
     firstName: "Fred",
@@ -401,8 +405,8 @@ omni({
 });
 
 // GET request with query parameters
-omni({
-  method: "get",
+const getResponse = await client.request({
+  method: "GET",
   url: "/user",
   params: {
     ID: 12345,
@@ -433,106 +437,331 @@ omni({
 
 ### Advanced Features
 
-#### Request Interceptors
+#### Using Middleware
 
 ```typescript
-// Add a request interceptor
-omni.interceptors.request.use(
-  function (config) {
+// Create a client instance
+const client = new OmniRequest();
+
+// Get the middleware manager
+const middlewareManager = client.getMiddlewareManager();
+
+// Add request middleware
+middlewareManager.use({
+  request: async (config) => {
     // Do something before request is sent
+    console.log("Request:", config.url);
     return config;
   },
-  function (error) {
-    // Do something with request error
-    return Promise.reject(error);
-  }
-);
-```
-
-#### Response Interceptors
-
-```typescript
-// Add a response interceptor
-omni.interceptors.response.use(
-  function (response) {
-    // Any status code within the range of 2xx
+  response: async (response) => {
+    // Do something with the response
+    console.log("Response:", response.status);
     return response;
   },
-  function (error) {
-    // Any status codes outside the range of 2xx
-    return Promise.reject(error);
-  }
-);
+  error: async (error) => {
+    // Handle errors
+    console.error("Error:", error.message);
+    throw error;
+  },
+});
+```
+
+#### Using Plugins
+
+```typescript
+// Create a client instance
+const client = new OmniRequest();
+
+// Create a custom plugin
+const loggingPlugin = {
+  name: "logger",
+  enabled: true,
+  beforeRequest: async (config) => {
+    console.log(`Request: ${config.method} ${config.url}`);
+    return config;
+  },
+  afterResponse: async (response) => {
+    console.log(`Response: ${response.status} ${response.config.url}`);
+    return response;
+  },
+};
+
+// Register the plugin
+client.use(loggingPlugin);
 ```
 
 #### Automatic Token Refresh
 
 ```typescript
-const instance = omni.create({
-  baseURL: "https://api.example.com",
-  auth: {
-    getToken: () => localStorage.getItem("token"),
-    refreshToken: async () => {
-      const response = await omni.post("/refresh");
-      return response.data.token;
-    },
-    shouldRefresh: (error) => error.response?.status === 401,
-  },
+// Create a client instance
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
 });
+
+// Create an auth plugin
+const authPlugin = {
+  name: "auth",
+  enabled: true,
+  beforeRequest: async (config) => {
+    // Add token to request
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+    return config;
+  },
+  onError: async (error) => {
+    // Handle 401 errors by refreshing token
+    if (error.status === 401) {
+      // Create a new client for the refresh request to avoid loops
+      const refreshClient = new OmniRequest();
+      const refreshResponse = await refreshClient.request({
+        method: "POST",
+        url: "https://dummyjson.com/products/refresh",
+        data: { refreshToken: localStorage.getItem("refreshToken") },
+      });
+
+      // Save the new token
+      localStorage.setItem("token", refreshResponse.data.token);
+
+      // Retry the original request
+      return client.request(error.config);
+    }
+    throw error;
+  },
+};
+
+// Register the plugin
+client.use(authPlugin);
 ```
 
 #### Caching
 
 ```typescript
-const instance = omni.create({
-  baseURL: "https://api.example.com",
-  cache: {
-    enable: true,
-    ttl: 60000, // 1 minute
-    strategy: "stale-while-revalidate",
-  },
+// Create a client instance
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
 });
+
+// Create a simple cache
+const cache = new Map();
+
+// Create a caching plugin
+const cachePlugin = {
+  name: "cache",
+  enabled: true,
+  beforeRequest: async (config) => {
+    // Only cache GET requests
+    if (config.method !== "GET") return config;
+
+    const cacheKey = `${config.method}-${config.url}`;
+    const cachedResponse = cache.get(cacheKey);
+
+    if (cachedResponse && Date.now() - cachedResponse.timestamp < 60000) {
+      // 1 minute TTL
+      // Return cached response
+      return Promise.reject({
+        __cached: true,
+        cachedResponse: cachedResponse.data,
+      });
+    }
+
+    return config;
+  },
+  afterResponse: async (response) => {
+    // Only cache GET requests
+    if (response.config.method !== "GET") return response;
+
+    const cacheKey = `${response.config.method}-${response.config.url}`;
+
+    // Store in cache
+    cache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: response,
+    });
+
+    return response;
+  },
+  onError: async (error) => {
+    // Check if this is our cached response signal
+    if (error.__cached) {
+      return error.cachedResponse;
+    }
+    throw error;
+  },
+};
+
+// Register the plugin
+client.use(cachePlugin);
 ```
 
 #### Retry Logic
 
 ```typescript
-const instance = omni.create({
-  baseURL: "https://api.example.com",
-  retry: {
-    attempts: 3,
-    backoff: "exponential",
-    conditions: [(error) => error.status === 503],
-  },
+// Create a client instance
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
 });
+
+// Create a retry plugin
+const retryPlugin = {
+  name: "retry",
+  enabled: true,
+  onError: async (error) => {
+    // Get the original request config
+    const config = error.config || {};
+
+    // Initialize retry count
+    config.__retryCount = config.__retryCount || 0;
+
+    // Check if we should retry (503 Service Unavailable)
+    if (error.status === 503 && config.__retryCount < 3) {
+      // Increment retry count
+      config.__retryCount++;
+
+      // Calculate exponential backoff delay
+      const delay = Math.pow(2, config.__retryCount) * 1000;
+
+      // Wait for the delay
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      // Retry the request
+      return client.request(config);
+    }
+
+    // If we shouldn't retry or we've reached max retries, throw the error
+    throw error;
+  },
+};
+
+// Register the plugin
+client.use(retryPlugin);
 ```
 
 #### Circuit Breaker
 
 ```typescript
-const instance = omni.create({
-  baseURL: "https://api.example.com",
-  circuitBreaker: {
-    failureThreshold: 5,
-    resetTimeout: 60000,
-    monitoredErrors: [500, 503],
-  },
+// Create a client instance
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
 });
+
+// Create a circuit breaker plugin
+const circuitBreakerPlugin = {
+  name: "circuitBreaker",
+  enabled: true,
+  priority: 100, // High priority to run early
+
+  // Circuit state
+  state: "CLOSED", // CLOSED, OPEN, HALF_OPEN
+  failures: 0,
+  lastFailureTime: 0,
+  failureThreshold: 5,
+  resetTimeout: 60000, // 1 minute
+
+  beforeRequest: async (config) => {
+    // Check if circuit is open
+    if (this.state === "OPEN") {
+      // Check if reset timeout has elapsed
+      const now = Date.now();
+      if (now - this.lastFailureTime > this.resetTimeout) {
+        // Move to half-open state
+        this.state = "HALF_OPEN";
+      } else {
+        // Circuit is open, reject the request
+        return Promise.reject({
+          message: "Circuit breaker is open",
+          type: "CIRCUIT_OPEN",
+          status: 0,
+        });
+      }
+    }
+
+    return config;
+  },
+
+  afterResponse: async (response) => {
+    // If we're in half-open state and got a successful response, close the circuit
+    if (this.state === "HALF_OPEN") {
+      this.state = "CLOSED";
+      this.failures = 0;
+    }
+
+    return response;
+  },
+
+  onError: async (error) => {
+    // Check if this is a monitored error (500, 503)
+    if ([500, 503].includes(error.status)) {
+      this.failures++;
+      this.lastFailureTime = Date.now();
+
+      // Check if we've reached the failure threshold
+      if (this.failures >= this.failureThreshold) {
+        this.state = "OPEN";
+      }
+    }
+
+    throw error;
+  },
+};
+
+// Register the plugin
+client.use(circuitBreakerPlugin);
 ```
 
-### React Integration
+### Complete Example
 
 ```typescript
-import { useOmni } from "omnirequest/react";
+// Import the library
+import { OmniRequest } from "omnirequest";
 
-function UserProfile({ userId }) {
-  const { data, loading, error } = useOmni(`/users/${userId}`);
+// Create a new instance with custom configuration
+const client = new OmniRequest({
+  baseURL: "https://dummyjson.com/products",
+  timeout: 5000,
+  headers: { "Content-Type": "application/json" },
+});
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+// Create a simple logging plugin
+const loggingPlugin = {
+  name: "logger",
+  enabled: true,
+  beforeRequest: async (config) => {
+    console.log(`Request: ${config.method} ${config.url}`);
+    return config;
+  },
+  afterResponse: async (response) => {
+    console.log(`Response: ${response.status} ${response.config.url}`);
+    return response;
+  },
+};
 
-  return <div>Hello, {data.name}!</div>;
+// Register the plugin
+client.use(loggingPlugin);
+
+// Make a request
+async function fetchData() {
+  try {
+    const response = await client.request({
+      method: "GET",
+      url: "/users",
+      params: { page: 1, limit: 10 },
+    });
+
+    console.log("Data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error:", error.message);
+    throw error;
+  }
 }
+
+// Call the function
+fetchData();
 ```
 
 ## 📝 License

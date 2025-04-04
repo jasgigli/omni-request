@@ -58,40 +58,17 @@ export class IntelligentRetryMiddleware implements Middleware {
     return state;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private resetCircuit(state: CircuitState): void {
-    state.failures = 0;
-    state.open = false;
-    state.halfOpen = false;
-    state.reopenTime = 0;
-  }
-
-  private incrementFailure(state: CircuitState): void {
-    state.failures++;
-    state.lastFailure = Date.now();
-
-    if (
-      this.config.circuitBreaker &&
-      state.failures >= this.config.circuitBreaker.threshold
-    ) {
-      state.open = true;
-      state.reopenTime = Date.now() + this.config.circuitBreaker.cooldown;
-    }
-  }
-
   request = async (config: RequestConfig): Promise<RequestConfig> => {
     const circuitState = this.getCircuitState(config);
     if (circuitState.open && !circuitState.halfOpen) {
       const now = Date.now();
       if (now < circuitState.reopenTime) {
-        throw new RequestError(
-          "Circuit is open for endpoint. Failing fast.",
+        throw new RequestError({
+          message: "Circuit is open for endpoint. Failing fast.",
           config,
-          "CIRCUIT_OPEN"
-        );
+          type: "CIRCUIT_OPEN" as ErrorType,
+          status: 0,
+        });
       } else {
         circuitState.halfOpen = true;
       }
@@ -123,7 +100,7 @@ export class IntelligentRetryMiddleware implements Middleware {
     };
 
     try {
-      const client = error.response?.config?.client || config.client;
+      const client = config.client;
       if (!client) {
         this.incrementFailure(circuitState);
         throw error;
@@ -140,7 +117,7 @@ export class IntelligentRetryMiddleware implements Middleware {
 
   private shouldRetry(error: RequestError): boolean {
     if (error.type === "NETWORK_ERROR") return true;
-    if (error.response?.status && error.response.status >= 500) return true;
+    if (error.status >= 500) return true;
     return false;
   }
 
@@ -150,5 +127,29 @@ export class IntelligentRetryMiddleware implements Middleware {
 
     const jitterMax = baseDelay * 0.2;
     return baseDelay + Math.random() * jitterMax;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private incrementFailure(state: CircuitState): void {
+    state.failures++;
+    state.lastFailure = Date.now();
+
+    if (
+      this.config.circuitBreaker &&
+      state.failures >= this.config.circuitBreaker.threshold
+    ) {
+      state.open = true;
+      state.reopenTime =
+        Date.now() + (this.config.circuitBreaker.cooldown || 60000);
+    }
+  }
+
+  private resetCircuit(state: CircuitState): void {
+    state.failures = 0;
+    state.open = false;
+    state.halfOpen = false;
   }
 }

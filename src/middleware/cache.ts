@@ -1,21 +1,26 @@
-import {
-  Middleware,
-  RequestConfig,
-  ResponseData,
-  CacheOptions,
-} from "../types";
+import { Middleware } from "../types/middleware";
+import { RequestConfig } from "../types/request";
+import { ResponseData } from "../types/response";
+import { CacheEntry, CacheOptions, CacheStrategy } from "../types/cache";
+
+export interface CacheMiddlewareOptions extends CacheOptions {
+  ttl: number;
+  strategy: CacheStrategy;
+  enabled: boolean;
+}
 
 export class CacheMiddleware implements Middleware {
   private cache: Map<string, { data: ResponseData; timestamp: number }> =
     new Map();
-  private options: CacheOptions;
+  private options: CacheMiddlewareOptions;
 
-  constructor(options: CacheOptions) {
+  constructor(options: CacheOptions = {}) {
     this.options = {
       ttl: 60000, // Default 1 minute
-      strategy: "memory",
+      strategy: CacheStrategy.MEMORY,
+      enabled: true,
       ...options,
-    };
+    } as CacheMiddlewareOptions;
   }
 
   private getCacheKey(config: RequestConfig): string {

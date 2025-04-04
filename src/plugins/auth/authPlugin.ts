@@ -1,5 +1,5 @@
-import { Plugin } from '../../types/plugin';
-import { RequestConfig } from '../../types/request';
+import { Plugin } from "../types/plugin";
+import { RequestConfig } from "../types/request";
 
 export interface AuthOptions {
   getToken: () => Promise<string> | string;
@@ -9,20 +9,27 @@ export interface AuthOptions {
 }
 
 export class AuthPlugin implements Plugin {
+  public readonly name = "auth";
+  public enabled = true;
   private isRefreshing = false;
   private refreshQueue: Array<(token: string) => void> = [];
 
   constructor(private options: AuthOptions) {}
 
-  async onRequest(config: RequestConfig): Promise<RequestConfig> {
+  async beforeRequest(config: RequestConfig): Promise<RequestConfig> {
     const token = await this.options.getToken();
     return {
       ...config,
       headers: {
         ...config.headers,
-        Authorization: `${this.options.tokenType || 'Bearer'} ${token}`
-      }
+        Authorization: `${this.options.tokenType || "Bearer"} ${token}`,
+      },
     };
+  }
+
+  async afterResponse(response: any): Promise<any> {
+    // Implementation
+    return response;
   }
 
   async onError(error: any, config: RequestConfig): Promise<RequestConfig> {
@@ -54,8 +61,8 @@ export class AuthPlugin implements Plugin {
       ...config,
       headers: {
         ...config.headers,
-        Authorization: `${this.options.tokenType || 'Bearer'} ${token}`
-      }
+        Authorization: `${this.options.tokenType || "Bearer"} ${token}`,
+      },
     };
   }
 }

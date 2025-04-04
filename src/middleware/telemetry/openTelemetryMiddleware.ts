@@ -1,7 +1,13 @@
 import { Middleware } from "../../types/middleware";
 import { RequestConfig } from "../../types/request";
 import { ResponseData } from "../../types/response";
-import { trace, context, SpanStatusCode } from '@opentelemetry/api';
+import { 
+  trace, 
+  context, 
+  SpanStatusCode, 
+  Span,
+  Tracer 
+} from '@opentelemetry/api';
 
 export interface TelemetryOptions {
   serviceName?: string;
@@ -11,7 +17,7 @@ export interface TelemetryOptions {
 }
 
 export class OpenTelemetryMiddleware implements Middleware {
-  private options: TelemetryOptions;
+  private options: Required<TelemetryOptions>;
 
   constructor(options: TelemetryOptions = {}) {
     this.options = {
@@ -24,16 +30,16 @@ export class OpenTelemetryMiddleware implements Middleware {
   }
 
   request = async (config: RequestConfig): Promise<RequestConfig> => {
-    const tracer = trace.getTracer(this.options.serviceName!);
+    const tracer: Tracer = trace.getTracer(this.options.serviceName);
     
-    return await tracer.startActiveSpan(`HTTP ${config.method}`, async (span) => {
+    return await tracer.startActiveSpan(`HTTP ${config.method}`, async (span: Span) => {
       try {
         // Add request attributes
-        span.setAttribute('http.url', config.url);
+        span.setAttribute('http.url', config.url || '');
         span.setAttribute('http.method', config.method || 'GET');
         
         if (this.options.includeHeaders) {
-          const safeHeaders = this.filterSensitiveData(config.headers);
+          const safeHeaders = this.filterSensitiveData(config.headers || {});
           span.setAttribute('http.request.headers', JSON.stringify(safeHeaders));
         }
 
@@ -64,12 +70,12 @@ export class OpenTelemetryMiddleware implements Middleware {
     return response;
   }
 
-  private filterSensitiveData(data: any): any {
-    if (!data) return data;
+  private filterSensitiveData(data: Record<string, any>): Record<string, any> {
+    if (!data) return {};
     
-    const filtered = { ...data };
+    const filtered: Record<string, any> = { ...data };
     for (const [key, value] of Object.entries(filtered)) {
-      filtered[key] = this.options.filterSensitiveData!(key, value);
+      filtered[key] = this.options.filterSensitiveData(key, value);
     }
     return filtered;
   }

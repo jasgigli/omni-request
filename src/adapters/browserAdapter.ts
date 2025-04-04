@@ -1,33 +1,33 @@
+import type { Adapter } from "./adapter";
 import type { RequestConfig } from "../types/request";
 import type { ResponseData } from "../types/response";
+import { RequestError, ErrorType } from "../types/error";
 
-export async function browserAdapter(
-  config: RequestConfig
-): Promise<ResponseData> {
-  const { url, method = "GET", headers = {}, data, ...rest } = config;
-
-  const fetchOptions: RequestInit = {
-    method,
-    headers: headers as HeadersInit,
-    ...rest,
-  };
-
-  if (data) {
-    if (typeof data === "object") {
-      fetchOptions.body = JSON.stringify(data);
-    } else {
-      fetchOptions.body = data as BodyInit;
+export const browserAdapter: Adapter = {
+  async request<T>(config: RequestConfig): Promise<ResponseData<T>> {
+    if (!config.url) {
+      throw new RequestError({
+        message: "URL is required",
+        config,
+        type: ErrorType.VALIDATION,
+        status: 0,
+      });
     }
-  }
 
-  const response = await fetch(url, fetchOptions);
-  const responseData = await response.json();
+    const response = await fetch(config.url, {
+      method: config.method,
+      headers: config.headers,
+      body: config.data ? JSON.stringify(config.data) : undefined,
+    });
 
-  return {
-    data: responseData,
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
-    config,
-  };
-}
+    const data = await response.json();
+
+    return {
+      data,
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      config,
+    };
+  },
+};

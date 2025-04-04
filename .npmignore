@@ -2,16 +2,22 @@
 src/
 tests/
 examples/
+architecture/
+node_modules/
+CHANGELOG.md
+
+
 
 # Config files
 tsconfig.json
-rollup.config.cjs
+rollup.config.js
 .eslintrc
 .prettierrc
 .gitignore
 .github
 .vscode
 .idea
+package-lock.json
 
 # Build tools
 node_modules/
@@ -31,5 +37,6 @@ npm-debug.log*
 ehthumbs.db
 Thumbs.db
 
-# But keep dist folder
-# If you have a line like `dist/`, remove it or comment it out.
+.bat
+
+

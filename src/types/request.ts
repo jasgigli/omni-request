@@ -19,7 +19,7 @@ export interface GraphQLOptions {
 export interface RequestConfig {
   url?: string;
   baseURL?: string;
-  method?: HttpMethod; // Using imported HttpMethod type
+  method?: HttpMethod; // Fixed: Changed Method to HttpMethod
   headers?: Record<string, string>;
   params?: Record<string, any>;
   data?: any;
@@ -68,7 +68,7 @@ export interface BaseRequestConfig {
 export interface RequestConfig extends BaseRequestConfig {
   url?: string; // Make url optional since it can be provided later
   baseURL?: string;
-  method?: Method;
+  method?: HttpMethod;
   headers?: Record<string, string>;
   params?: Record<string, any>;
   data?: any;

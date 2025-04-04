@@ -1,12 +1,14 @@
 // src/core/utils/offlineDB.ts
 import { openDB, IDBPDatabase } from "idb";
-import { CacheEntry } from "../../middleware/revalidationCache";
+import { CacheEntry } from "../../types/cache";
 
 /**
  * Check if we're in a browser environment.
  */
 export function isBrowser(): boolean {
-  return typeof window !== "undefined" && typeof window.document !== "undefined";
+  return (
+    typeof window !== "undefined" && typeof window.document !== "undefined"
+  );
 }
 
 /**
@@ -19,41 +21,32 @@ export function isIndexedDBAvailable(): boolean {
 /**
  * Store offline data in IndexedDB under "omniRequestCache".
  */
-export async function storeOfflineData(key: string, entry: CacheEntry): Promise<void> {
-  try {
-    const db = await openCacheDB();
-    const tx = db.transaction("omniRequestCache", "readwrite");
-    const store = tx.objectStore("omniRequestCache");
-    await store.put(entry, key);
-    await tx.done;
-    db.close();
-  } catch (err) {
-    console.warn("Failed to store data in IndexedDB:", err);
-  }
+export async function storeOfflineData(
+  key: string,
+  entry: CacheEntry
+): Promise<void> {
+  const db = await openCacheDB();
+  await db.put("omniRequestCache", entry, key);
 }
 
 /**
  * Retrieve offline data from IndexedDB by key.
  */
-export async function getOfflineData(key: string): Promise<CacheEntry | undefined> {
-  try {
-    const db = await openCacheDB();
-    const tx = db.transaction("omniRequestCache", "readonly");
-    const store = tx.objectStore("omniRequestCache");
-    const data = await store.get(key);
-    db.close();
-    return data;
-  } catch (err) {
-    console.warn("Failed to retrieve data from IndexedDB:", err);
-    return undefined;
-  }
+export async function getOfflineData(
+  key: string
+): Promise<CacheEntry | undefined> {
+  const db = await openCacheDB();
+  return db.get("omniRequestCache", key);
 }
 
 /**
  * Interface describing our object stores.
  */
 interface OmniRequestDB {
-  omniRequestCache: CacheEntry;
+  omniRequestCache: {
+    key: string;
+    value: CacheEntry;
+  };
 }
 
 /**
@@ -66,6 +59,6 @@ async function openCacheDB(): Promise<IDBPDatabase<OmniRequestDB>> {
       if (!db.objectStoreNames.contains("omniRequestCache")) {
         db.createObjectStore("omniRequestCache");
       }
-    }
+    },
   });
 }

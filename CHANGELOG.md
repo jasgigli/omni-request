@@ -1,6 +1,25 @@
 # Changelog
 
-## [1.1.2] - 2024-01-XX
+## [1.1.3] - 2024-03-19
+
+### Added
+
+- Enhanced file upload system with chunking and resume capability
+- Advanced request batching and aggregation
+- Multi-level caching system with predictive prefetching
+- Circuit breaker implementation for failure handling
+- Request prioritization system
+- OpenTelemetry integration for advanced monitoring
+- Enhanced cross-platform compatibility (Bun, Deno support)
+
+### Improved
+
+- TypeScript type definitions
+- Documentation for new features
+- Performance optimizations
+- Error handling and retry logic
+
+## [1.1.2] - 2024-01-15
 
 ### Added
 

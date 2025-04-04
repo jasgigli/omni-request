@@ -1,7 +1,18 @@
 {
   "name": "omnirequest",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
   "description": "A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.",
   "keywords": [
     "node.js",
@@ -19,8 +30,6 @@
     "token refresh",
     "advanced http client"
   ],
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -50,7 +59,8 @@
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
   },
   "scripts": {
-    "prebuild": "rimraf dist",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
     "build": "rollup -c rollup.config.js --failAfterWarnings false",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" --fix",
@@ -74,7 +84,8 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "idb": "^8.0.2"
+    "idb": "^8.0.2",
+    "@opentelemetry/api": "^1.7.0"
   },
   "files": [
     "dist/",

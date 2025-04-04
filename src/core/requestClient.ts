@@ -1,6 +1,6 @@
 import type { RequestConfig } from "../types/request";
 import type { ResponseData } from "../types/response";
-import type { Plugin } from "../types";
+import type { Plugin } from "../types/plugin";
 import type { IMiddlewareManager } from "../types/middleware";
 import { MiddlewareManager } from "./middleware/middlewareManager";
 import { getAdapter } from "../adapters";
@@ -18,12 +18,8 @@ export class RequestClient {
   }
 
   async request<T = any>(
-    requestConfig: RequestConfig
+    requestConfig: Partial<RequestConfig> = {}
   ): Promise<ResponseData<T>> {
-    if (!requestConfig.url) {
-      throw new Error("URL is required for making a request");
-    }
-
     let finalConfig = { ...this.config, ...requestConfig };
 
     try {
@@ -31,6 +27,8 @@ export class RequestClient {
       for (const plugin of this.plugins) {
         if (plugin.onRequest) {
           finalConfig = await plugin.onRequest(finalConfig);
+        } else if (plugin.beforeRequest) {
+          finalConfig = await plugin.beforeRequest(finalConfig);
         }
       }
 
@@ -40,8 +38,8 @@ export class RequestClient {
       // Get the appropriate adapter for the current environment
       const adapter = getAdapter();
 
-      // Make the request
-      let response = await adapter(finalConfig);
+      // Make the request using the adapter's request method
+      let response = await adapter.request<T>(finalConfig);
 
       // Apply middleware post-response
       response = await this.middleware.applyResponseMiddleware(response);
@@ -50,6 +48,8 @@ export class RequestClient {
       for (const plugin of this.plugins) {
         if (plugin.onResponse) {
           response = await plugin.onResponse(response);
+        } else if (plugin.afterResponse) {
+          response = await plugin.afterResponse(response);
         }
       }
 
@@ -61,6 +61,67 @@ export class RequestClient {
 
   use(plugin: Plugin): void {
     this.plugins.push(plugin);
+  }
+
+  async get<T = any>(
+    url: string,
+    config: Partial<RequestConfig> = {}
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      method: "GET",
+      url,
+    });
+  }
+
+  async post<T = any>(
+    url: string,
+    data?: any,
+    config: Partial<RequestConfig> = {}
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      method: "POST",
+      url,
+      data,
+    });
+  }
+
+  async put<T = any>(
+    url: string,
+    data?: any,
+    config: Partial<RequestConfig> = {}
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      method: "PUT",
+      url,
+      data,
+    });
+  }
+
+  async delete<T = any>(
+    url: string,
+    config: Partial<RequestConfig> = {}
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      method: "DELETE",
+      url,
+    });
+  }
+
+  async patch<T = any>(
+    url: string,
+    data?: any,
+    config: Partial<RequestConfig> = {}
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      method: "PATCH",
+      url,
+      data,
+    });
   }
 
   getMiddlewareManager(): IMiddlewareManager {

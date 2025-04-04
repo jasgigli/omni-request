@@ -73,4 +73,22 @@ Below is a consolidated list of features that the **Omni Request** library aims 
 
 ---
 
-This list represents a comprehensive, next-generation approach to API handling by combining the best features of traditional methods with innovative enhancements that directly address modern development challenges.
+Core Axios-like features:
+Basic HTTP methods (GET, POST, PUT, etc.)
+Request/response interceptors
+Instance creation with custom configs
+Promise-based API
+Advanced features beyond Axios:
+TypeScript-first design
+Zero dependencies
+Multi-platform support (Node.js, Browsers, Deno, Bun)
+Advanced authentication with auto-refresh
+Smart request deduplication
+Request batching and aggregation
+Intelligent retry strategies with exponential backoff
+Multi-level caching system
+Circuit breaker pattern
+Comprehensive monitoring and metrics
+GraphQL support
+Advanced security features (request signing, encryption)
+File upload capabilities with chunking
