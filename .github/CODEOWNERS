@@ -1,0 +1,14 @@
+# These owners will be the default owners for everything in the repo.
+# Unless a later match takes precedence, they will be requested for
+# review when someone opens a pull request.
+*       @jasgigli
+
+# Order is important; the last matching pattern takes the most precedence.
+
+# Core functionality
+/src/core/       @jasgigli
+/src/adapters/   @jasgigli
+
+# Documentation
+/docs/           @jasgigli
+*.md             @jasgigli

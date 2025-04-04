@@ -9,5 +9,10 @@ export declare class RequestClient {
     constructor(config?: Partial<RequestConfig>);
     request<T = any>(requestConfig?: Partial<RequestConfig>): Promise<ResponseData<T>>;
     use(plugin: Plugin): void;
+    get<T = any>(url: string, config?: Partial<RequestConfig>): Promise<ResponseData<T>>;
+    post<T = any>(url: string, data?: any, config?: Partial<RequestConfig>): Promise<ResponseData<T>>;
+    put<T = any>(url: string, data?: any, config?: Partial<RequestConfig>): Promise<ResponseData<T>>;
+    delete<T = any>(url: string, config?: Partial<RequestConfig>): Promise<ResponseData<T>>;
+    patch<T = any>(url: string, data?: any, config?: Partial<RequestConfig>): Promise<ResponseData<T>>;
     getMiddlewareManager(): IMiddlewareManager;
 }

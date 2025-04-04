@@ -1,4 +1,10 @@
 import { Plugin } from "../../core/plugin/pluginManager";
+import { RequestConfig } from "../../types/request";
+declare global {
+    interface FormData {
+        append(name: string, value: any, filename?: string): void;
+    }
+}
 export interface UploadOptions {
     chunkSize?: number;
     concurrent?: number;
@@ -20,6 +26,6 @@ export declare class FileUploaderPlugin implements Plugin {
     onRequest(config: RequestConfig): Promise<RequestConfig>;
     private handleSimpleUpload;
     private handleChunkedUpload;
+    private uploadChunk;
     private createProgressHandler;
-    private handleChunkError;
 }

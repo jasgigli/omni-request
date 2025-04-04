@@ -1,4 +1,7 @@
 import type { Plugin } from "../../types/plugin";
+
+// Re-export Plugin interface for plugins to import
+export type { Plugin } from "../../types/plugin";
 import type { RequestConfig } from "../../types/request";
 import type { ResponseData } from "../../types/response";
 

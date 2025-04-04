@@ -1,4 +1,5 @@
 import type { Plugin } from "../../types/plugin";
+export type { Plugin } from "../../types/plugin";
 import type { RequestConfig } from "../../types/request";
 import type { ResponseData } from "../../types/response";
 export declare class PluginManager {

@@ -9,6 +9,10 @@
 [![Type definitions](https://img.shields.io/npm/types/omnirequest.svg?color=success)](https://www.npmjs.com/package/omnirequest)
 [![npm downloads/month](https://img.shields.io/npm/dm/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
 [![GitHub Stars](https://img.shields.io/github/stars/jasgigli/omni-request.svg?style=social)](https://github.com/jasgigli/omni-request/stargazers)
+[![CI](https://github.com/jasgigli/omni-request/actions/workflows/ci.yml/badge.svg)](https://github.com/jasgigli/omni-request/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jasgigli/omni-request/branch/main/graph/badge.svg)](https://codecov.io/gh/jasgigli/omni-request)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 </div>
 
@@ -764,6 +768,22 @@ async function fetchData() {
 fetchData();
 ```
 
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please read our [Contributing Guide](CONTRIBUTING.md) for more information.
+
+## 🔒 Security
+
+If you discover a security vulnerability within OmniRequest, please follow our [Security Policy](SECURITY.md).
+
 ## 📝 License
 
 [MIT](LICENSE)
@@ -771,5 +791,5 @@ fetchData();
 ---
 
 <div align="center">
-  Made with ❤️ by <a href="https://github.com/jasgigli">Junaid Ali Shah Gigli</a>
+  <sub>Built with ❤️ by <a href="https://github.com/jasgigli">Junaid Ali Shah Gigli</a></sub>
 </div>

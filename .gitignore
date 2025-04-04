@@ -1,59 +1,63 @@
-# Build
+# Dependencies
 node_modules/
-build-ignore-errors.bat
-build-ignore-errors.js
 
-# Source
-tests/
-examples/
-architecture/
+# Build output
+dist/
+build/
+lib/
 
-
-# Config files
-tsconfig.json
-rollup.config.js
-.eslintrc
-.prettierrc
-.gitignore
-.github
-.vscode
-.idea
-.npmignore
-package-lock.json
-
-# Cache
-.cache/
-*.tsbuildinfo
+# Coverage reports
+coverage/
+.nyc_output/
 
 # Logs
+logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment
+# Environment variables
 .env*
+!.env.example
 
-# Coverage
-coverage/
+# Cache and temporary files
+.cache/
+*.tsbuildinfo
+.eslintcache
+*.tmp
+*.temp
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# IDE
-.vscode/
+# IDE and editor files
 .idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
+*.sw?
 
-# Test output
-.nyc_output/
+# Build scripts and tools
+build-*.js
+build-*.cjs
+build-*.bat
+*.bat
 
+# Local development files
 exampleLocalCheckLibrary/
 
-.bat
-build.bat
-
-
-
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*

@@ -172,6 +172,44 @@ class RequestClient {
     use(plugin) {
         this.plugins.push(plugin);
     }
+    async get(url, config = {}) {
+        return this.request({
+            ...config,
+            method: "GET",
+            url,
+        });
+    }
+    async post(url, data, config = {}) {
+        return this.request({
+            ...config,
+            method: "POST",
+            url,
+            data,
+        });
+    }
+    async put(url, data, config = {}) {
+        return this.request({
+            ...config,
+            method: "PUT",
+            url,
+            data,
+        });
+    }
+    async delete(url, config = {}) {
+        return this.request({
+            ...config,
+            method: "DELETE",
+            url,
+        });
+    }
+    async patch(url, data, config = {}) {
+        return this.request({
+            ...config,
+            method: "PATCH",
+            url,
+            data,
+        });
+    }
     getMiddlewareManager() {
         return this.middleware;
     }
