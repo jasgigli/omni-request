@@ -1,3 +1,11 @@
+/**
+ * omnirequest v1.1.5
+ * A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.
+ *
+ * @author Junaid Ali Shah Gigli <overview.jjj@gmail.com>
+ * @license MIT
+ * @preserve
+ */
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
@@ -226,16 +234,24 @@ const defaultConfig = {
     responseType: "json",
 };
 
+/**
+ * OmniRequest class extends RequestClient with additional static methods
+ */
 class OmniRequest extends RequestClient {
     static create(config = {}) {
-        return new RequestClient({ ...defaultConfig, ...config });
+        return new OmniRequest({ ...defaultConfig, ...config });
     }
 }
 OmniRequest.defaults = defaultConfig;
 // Create default instance
-const omni = new OmniRequest(defaultConfig);
+const omnirequest = new OmniRequest(defaultConfig);
+// Add create method to the instance
+omnirequest.create = (config) => {
+    return OmniRequest.create(config);
+};
+// Add defaults to the instance
+omnirequest.defaults = OmniRequest.defaults;
 
 exports.OmniRequest = OmniRequest;
-exports.default = omni;
-exports.omni = omni;
+exports.default = omnirequest;
 //# sourceMappingURL=index.cjs.map

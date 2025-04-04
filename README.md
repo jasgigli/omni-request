@@ -40,12 +40,107 @@ pnpm add omnirequest
 
 ### Import the Library
 
-```typescript
+```javascript
 // ESM
-import { OmniRequest } from "omnirequest";
+import omnirequest from "omnirequest";
 
 // CommonJS
-const { OmniRequest } = require("omnirequest");
+const omnirequest = require("omnirequest");
+```
+
+### Making Simple Requests
+
+OmniRequest provides a simple API similar to Axios:
+
+```javascript
+// Make a GET request
+omnirequest.get('https://api.example.com/data')
+  .then(response => {
+    console.log(response.data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+
+// GET with query parameters
+omnirequest.get('https://api.example.com/data', {
+  params: {
+    id: 123,
+    sort: 'desc'
+  }
+})
+  .then(response => {
+    console.log(response.data);
+  });
+
+// Make a POST request
+omnirequest.post('https://api.example.com/data', {
+  name: 'John Doe',
+  email: 'john@example.com'
+})
+  .then(response => {
+    console.log(response.data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+
+// Using async/await
+async function fetchData() {
+  try {
+    const response = await omnirequest.get('https://api.example.com/data');
+    console.log(response.data);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+```
+
+### Creating a Custom Instance
+
+```javascript
+const api = omnirequest.create({
+  baseURL: 'https://api.example.com',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer token'
+  },
+  timeout: 5000
+});
+
+// Use the custom instance
+api.get('/users')
+  .then(response => {
+    console.log(response.data);
+  });
+```
+
+### Available Methods
+
+OmniRequest provides these convenient methods for different HTTP requests:
+
+```javascript
+// GET request
+omnirequest.get(url, config);
+
+// POST request
+omnirequest.post(url, data, config);
+
+// PUT request
+omnirequest.put(url, data, config);
+
+// DELETE request
+omnirequest.delete(url, config);
+
+// PATCH request
+omnirequest.patch(url, data, config);
+
+// Direct request method
+omnirequest.request({
+  method: 'GET',
+  url: 'https://api.example.com/data',
+  params: { id: 123 }
+});
 ```
 
 ### Making Requests

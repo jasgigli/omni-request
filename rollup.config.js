@@ -9,7 +9,8 @@ import typescript from "rollup-plugin-typescript2";
 import { defineConfig } from "rollup";
 
 // Package info
-const pkg = require("./package.json");
+import { readFileSync } from 'fs';
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 // Banner to add to the top of each file
 const banner = `/**
@@ -41,14 +42,14 @@ const config = defineConfig({
   input: "src/index.ts",
   output: [
     {
-      file: pkg.module || "dist/index.js",
+      file: "dist/index.js",
       format: "esm",
       sourcemap: true,
       exports: "named",
       banner,
     },
     {
-      file: pkg.main.replace("./dist/", "./dist/") || "dist/index.cjs",
+      file: "dist/index.cjs",
       format: "cjs",
       sourcemap: true,
       exports: "named",
@@ -74,8 +75,3 @@ const config = defineConfig({
 });
 
 export default config;
-
-// For CommonJS compatibility
-if (typeof module !== "undefined") {
-  module.exports = config;
-}
