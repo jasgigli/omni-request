@@ -1,5 +1,5 @@
 /**
- * omnirequest v2.1.0
+ * omnirequest v3.0.0
  * A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.
  *
  * @author Junaid Ali Shah Gigli <overview.jjj@gmail.com>
@@ -1868,6 +1868,116 @@ class OfflineSyncMiddleware {
     }
 }
 
+class RateLimitMiddleware {
+    constructor(config = {}) {
+        this.requestQueue = [];
+        this.config = {
+            requestsPerSecond: config.requestsPerSecond || 0,
+            requestsPerMinute: config.requestsPerMinute || 60,
+            requestsPerHour: config.requestsPerHour || 0,
+            burstSize: config.burstSize || 10,
+            skipSuccessfulRequests: config.skipSuccessfulRequests || false,
+            skipFailedRequests: config.skipFailedRequests || false,
+        };
+        this.state = {
+            tokens: this.config.burstSize,
+            lastRefill: Date.now(),
+        };
+        this.startRefillInterval();
+    }
+    async request(config) {
+        await this.waitForToken();
+        return config;
+    }
+    async response(response) {
+        if (this.config.skipSuccessfulRequests) {
+            this.refundToken();
+        }
+        return response;
+    }
+    async error(error) {
+        if (this.config.skipFailedRequests) {
+            this.refundToken();
+        }
+        throw error;
+    }
+    async waitForToken() {
+        this.refillTokens();
+        if (this.state.tokens > 0) {
+            this.state.tokens--;
+            return;
+        }
+        // Wait for token to become available
+        await new Promise((resolve) => {
+            this.requestQueue.push(resolve);
+        });
+    }
+    refundToken() {
+        this.state.tokens = Math.min(this.state.tokens + 1, this.config.burstSize);
+    }
+    refillTokens() {
+        const now = Date.now();
+        const timeSinceLastRefill = now - this.state.lastRefill;
+        if (timeSinceLastRefill < 1000) {
+            return;
+        }
+        let tokensToAdd = 0;
+        // Calculate tokens based on per-second rate
+        if (this.config.requestsPerSecond > 0) {
+            const secondsPassed = Math.floor(timeSinceLastRefill / 1000);
+            tokensToAdd = secondsPassed * this.config.requestsPerSecond;
+        }
+        // Calculate tokens based on per-minute rate
+        else if (this.config.requestsPerMinute > 0) {
+            const minutesPassed = timeSinceLastRefill / 60000;
+            tokensToAdd = Math.floor(minutesPassed * this.config.requestsPerMinute);
+        }
+        // Calculate tokens based on per-hour rate
+        else if (this.config.requestsPerHour > 0) {
+            const hoursPassed = timeSinceLastRefill / 3600000;
+            tokensToAdd = Math.floor(hoursPassed * this.config.requestsPerHour);
+        }
+        if (tokensToAdd > 0) {
+            this.state.tokens = Math.min(this.state.tokens + tokensToAdd, this.config.burstSize);
+            this.state.lastRefill = now;
+            // Process queued requests
+            this.processQueue();
+        }
+    }
+    processQueue() {
+        while (this.requestQueue.length > 0 && this.state.tokens > 0) {
+            this.state.tokens--;
+            const resolve = this.requestQueue.shift();
+            resolve?.();
+        }
+    }
+    startRefillInterval() {
+        setInterval(() => {
+            this.refillTokens();
+        }, 1000);
+    }
+    /**
+     * Reset the rate limiter state
+     */
+    reset() {
+        this.state = {
+            tokens: this.config.burstSize,
+            lastRefill: Date.now(),
+        };
+        this.requestQueue = [];
+    }
+    /**
+     * Get current rate limit status
+     */
+    getStatus() {
+        return {
+            tokens: this.state.tokens,
+            burstSize: this.config.burstSize,
+            queuedRequests: this.requestQueue.length,
+        };
+    }
+}
+
 /**
  * Request and response transformation utilities
  */
@@ -2039,6 +2149,1044 @@ const CommonTransformers = {
 };
 
 /**
+ * File upload and download utilities with progress tracking
+ */
+class FileUploader {
+    calculateSpeed(loaded, previousLoaded, timeElapsed) {
+        if (timeElapsed === 0)
+            return 0;
+        return (loaded - previousLoaded) / timeElapsed;
+    }
+    calculateTimeRemaining(total, loaded, speed) {
+        if (speed === 0)
+            return 0;
+        return (total - loaded) / speed;
+    }
+    async uploadFile(url, file, options = {}) {
+        const { onProgress, headers = {} } = options;
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const startTime = Date.now();
+            let previousLoaded = 0;
+            let previousTime = startTime;
+            xhr.open('POST', url, true);
+            // Set headers
+            Object.entries(headers).forEach(([key, value]) => {
+                xhr.setRequestHeader(key, value);
+            });
+            // Track progress
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const currentTime = Date.now();
+                    const timeElapsed = (currentTime - previousTime) / 1000;
+                    const loaded = event.loaded;
+                    const total = event.total;
+                    const speed = this.calculateSpeed(loaded, previousLoaded, timeElapsed);
+                    const timeRemaining = this.calculateTimeRemaining(total, loaded, speed);
+                    onProgress({
+                        loaded,
+                        total,
+                        percentage: (loaded / total) * 100,
+                        speed,
+                        timeRemaining
+                    });
+                    previousLoaded = loaded;
+                    previousTime = currentTime;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    }
+                    catch {
+                        resolve(xhr.responseText);
+                    }
+                }
+                else {
+                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+            };
+            xhr.onerror = () => {
+                reject(new Error('Upload failed due to network error'));
+            };
+            xhr.onabort = () => {
+                reject(new Error('Upload was aborted'));
+            };
+            const formData = new FormData();
+            formData.append('file', file);
+            xhr.send(formData);
+        });
+    }
+    async uploadFileWithRetry(url, file, options = {}) {
+        const { retries = 3 } = options;
+        let lastError = null;
+        for (let i = 0; i <= retries; i++) {
+            try {
+                return await this.uploadFile(url, file, options);
+            }
+            catch (error) {
+                lastError = error;
+                if (i < retries) {
+                    // Exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+        throw lastError;
+    }
+    async uploadChunked(url, file, options = {}) {
+        const { chunkSize = 1024 * 1024, onProgress, headers = {} } = options;
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        const chunks = [];
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            chunks.push(file.slice(start, end));
+        }
+        const uploadId = `${file.name}-${Date.now()}`;
+        let uploadedChunks = 0;
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const chunkHeaders = {
+                ...headers,
+                'Content-Range': `bytes ${i * chunkSize}-${Math.min((i + 1) * chunkSize, file.size) - 1}/${file.size}`,
+                'X-Upload-Id': uploadId,
+                'X-Chunk-Index': i.toString(),
+                'X-Total-Chunks': totalChunks.toString()
+            };
+            await this.uploadFile(url, chunk, { headers: chunkHeaders });
+            uploadedChunks++;
+            if (onProgress) {
+                onProgress({
+                    loaded: uploadedChunks * chunkSize,
+                    total: file.size,
+                    percentage: (uploadedChunks / totalChunks) * 100,
+                    speed: 0,
+                    timeRemaining: 0
+                });
+            }
+        }
+        return { uploadId, chunks: totalChunks };
+    }
+}
+class FileDownloader {
+    calculateSpeed(loaded, previousLoaded, timeElapsed) {
+        if (timeElapsed === 0)
+            return 0;
+        return (loaded - previousLoaded) / timeElapsed;
+    }
+    calculateTimeRemaining(total, loaded, speed) {
+        if (speed === 0)
+            return 0;
+        return (total - loaded) / speed;
+    }
+    async downloadFile(url, filename, options = {}) {
+        const { onProgress, headers = {} } = options;
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const startTime = Date.now();
+            let previousLoaded = 0;
+            let previousTime = startTime;
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            // Set headers
+            Object.entries(headers).forEach(([key, value]) => {
+                xhr.setRequestHeader(key, value);
+            });
+            // Track progress
+            xhr.onprogress = (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const currentTime = Date.now();
+                    const timeElapsed = (currentTime - previousTime) / 1000;
+                    const loaded = event.loaded;
+                    const total = event.total;
+                    const speed = this.calculateSpeed(loaded, previousLoaded, timeElapsed);
+                    const timeRemaining = this.calculateTimeRemaining(total, loaded, speed);
+                    onProgress({
+                        loaded,
+                        total,
+                        percentage: (loaded / total) * 100,
+                        speed,
+                        timeRemaining
+                    });
+                    previousLoaded = loaded;
+                    previousTime = currentTime;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const blob = xhr.response;
+                    // Trigger download if filename is provided
+                    if (filename) {
+                        const downloadUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(downloadUrl);
+                    }
+                    resolve(blob);
+                }
+                else {
+                    reject(new Error(`Download failed with status ${xhr.status}`));
+                }
+            };
+            xhr.onerror = () => {
+                reject(new Error('Download failed due to network error'));
+            };
+            xhr.onabort = () => {
+                reject(new Error('Download was aborted'));
+            };
+            xhr.send();
+        });
+    }
+    async downloadFileWithRetry(url, filename, options = {}) {
+        const { retries = 3 } = options;
+        let lastError = null;
+        for (let i = 0; i <= retries; i++) {
+            try {
+                return await this.downloadFile(url, filename, options);
+            }
+            catch (error) {
+                lastError = error;
+                if (i < retries) {
+                    // Exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+        throw lastError;
+    }
+    async downloadAsDataURL(url, options = {}) {
+        const blob = await this.downloadFile(url, undefined, options);
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to convert blob to data URL'));
+            reader.readAsDataURL(blob);
+        });
+    }
+    async downloadAsText(url, options = {}) {
+        const blob = await this.downloadFile(url, undefined, options);
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to convert blob to text'));
+            reader.readAsText(blob);
+        });
+    }
+}
+// Global instances
+const fileUploader = new FileUploader();
+const fileDownloader = new FileDownloader();
+// Convenience functions
+async function uploadFile(url, file, options) {
+    return fileUploader.uploadFile(url, file, options);
+}
+async function downloadFile(url, filename, options) {
+    return fileDownloader.downloadFile(url, filename, options);
+}
+
+/**
+ * Persistent cache implementation using IndexedDB and localStorage
+ * Provides offline-first capabilities with automatic synchronization
+ */
+class PersistentCache {
+    constructor(options = {}) {
+        this.db = null;
+        this.dbName = options.dbName || 'omnirequest-cache';
+        this.storeName = options.storeName || 'responses';
+        this.version = options.version || 1;
+        this.fallbackToLocalStorage = options.fallbackToLocalStorage ?? true;
+        this.ready = this.initDB();
+    }
+    async initDB() {
+        if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+            return false;
+        }
+        return new Promise((resolve) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            request.onerror = () => {
+                console.warn('IndexedDB initialization failed, falling back to localStorage');
+                resolve(false);
+            };
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve(true);
+            };
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'key' });
+                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+            };
+        });
+    }
+    async get(key) {
+        await this.ready;
+        if (this.db) {
+            return this.getFromIndexedDB(key);
+        }
+        else if (this.fallbackToLocalStorage) {
+            return this.getFromLocalStorage(key);
+        }
+        return null;
+    }
+    async getFromIndexedDB(key) {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get(key);
+            request.onsuccess = () => {
+                const result = request.result;
+                if (result && Date.now() - result.timestamp < result.staleTime) {
+                    resolve(result);
+                }
+                else {
+                    resolve(null);
+                }
+            };
+            request.onerror = () => resolve(null);
+        });
+    }
+    getFromLocalStorage(key) {
+        try {
+            const item = localStorage.getItem(`${this.dbName}:${key}`);
+            if (!item)
+                return null;
+            const entry = JSON.parse(item);
+            if (Date.now() - entry.timestamp < entry.staleTime) {
+                return entry;
+            }
+            localStorage.removeItem(`${this.dbName}:${key}`);
+            return null;
+        }
+        catch {
+            return null;
+        }
+    }
+    async set(key, entry) {
+        await this.ready;
+        if (this.db) {
+            await this.setToIndexedDB(key, entry);
+        }
+        else if (this.fallbackToLocalStorage) {
+            this.setToLocalStorage(key, entry);
+        }
+    }
+    async setToIndexedDB(key, entry) {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.put({ ...entry, key });
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+        });
+    }
+    setToLocalStorage(key, entry) {
+        try {
+            localStorage.setItem(`${this.dbName}:${key}`, JSON.stringify(entry));
+        }
+        catch (error) {
+            console.warn('localStorage set failed:', error);
+        }
+    }
+    async delete(key) {
+        await this.ready;
+        if (this.db) {
+            await this.deleteFromIndexedDB(key);
+        }
+        else if (this.fallbackToLocalStorage) {
+            this.deleteFromLocalStorage(key);
+        }
+    }
+    async deleteFromIndexedDB(key) {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.delete(key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+        });
+    }
+    deleteFromLocalStorage(key) {
+        try {
+            localStorage.removeItem(`${this.dbName}:${key}`);
+        }
+        catch (error) {
+            console.warn('localStorage delete failed:', error);
+        }
+    }
+    async clear() {
+        await this.ready;
+        if (this.db) {
+            await this.clearIndexedDB();
+        }
+        else if (this.fallbackToLocalStorage) {
+            this.clearLocalStorage();
+        }
+    }
+    async clearIndexedDB() {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+        });
+    }
+    clearLocalStorage() {
+        try {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith(`${this.dbName}:`)) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        catch (error) {
+            console.warn('localStorage clear failed:', error);
+        }
+    }
+    async cleanup() {
+        await this.ready;
+        if (this.db) {
+            await this.cleanupIndexedDB();
+        }
+        else if (this.fallbackToLocalStorage) {
+            this.cleanupLocalStorage();
+        }
+    }
+    async cleanupIndexedDB() {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const index = store.index('timestamp');
+            const request = index.openCursor(IDBKeyRange.upperBound(Date.now()));
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    cursor.delete();
+                    cursor.continue();
+                }
+                else {
+                    resolve();
+                }
+            };
+            request.onerror = () => resolve();
+        });
+    }
+    cleanupLocalStorage() {
+        try {
+            const keys = Object.keys(localStorage);
+            const now = Date.now();
+            keys.forEach(key => {
+                if (key.startsWith(`${this.dbName}:`)) {
+                    try {
+                        const item = localStorage.getItem(key);
+                        if (item) {
+                            const entry = JSON.parse(item);
+                            if (now - entry.timestamp > entry.staleTime) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+                    }
+                    catch {
+                        localStorage.removeItem(key);
+                    }
+                }
+            });
+        }
+        catch (error) {
+            console.warn('localStorage cleanup failed:', error);
+        }
+    }
+    async getSize() {
+        await this.ready;
+        if (this.db) {
+            return this.getIndexedDBSize();
+        }
+        else if (this.fallbackToLocalStorage) {
+            return this.getLocalStorageSize();
+        }
+        return 0;
+    }
+    async getIndexedDBSize() {
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.count();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => resolve(0);
+        });
+    }
+    getLocalStorageSize() {
+        try {
+            let count = 0;
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith(`${this.dbName}:`)) {
+                    count++;
+                }
+            });
+            return count;
+        }
+        catch {
+            return 0;
+        }
+    }
+}
+// Global persistent cache instance
+const persistentCache = new PersistentCache();
+
+/**
+ * Authentication manager for handling login, logout, token refresh, and session management
+ */
+class AuthManager {
+    constructor(config) {
+        this.tokens = null;
+        this.user = null;
+        this.refreshTimer = null;
+        this.config = {
+            refreshThreshold: 300, // 5 minutes default
+            autoRefresh: true,
+            ...config
+        };
+        this.loadFromStorage();
+        this.setupAutoRefresh();
+    }
+    /**
+     * Authenticate user with credentials
+     */
+    async login(credentials) {
+        try {
+            const response = await fetch(this.config.loginEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(credentials),
+            });
+            if (!response.ok) {
+                throw new Error(`Login failed: ${response.statusText}`);
+            }
+            const data = await response.json();
+            // Extract tokens and user from response
+            const tokens = {
+                accessToken: data.access_token || data.accessToken || data.token,
+                refreshToken: data.refresh_token || data.refreshToken,
+                tokenType: data.token_type || data.tokenType || 'Bearer',
+                expiresIn: data.expires_in || data.expiresIn,
+                expiresAt: data.expires_at || data.expiresAt,
+            };
+            const user = data.user || data;
+            this.setTokens(tokens);
+            this.setUser(user);
+            this.saveToStorage();
+            this.config.onAuthSuccess?.(user, tokens);
+            return { user, tokens };
+        }
+        catch (error) {
+            this.config.onAuthFailure?.(error);
+            throw error;
+        }
+    }
+    /**
+     * Logout user and clear session
+     */
+    async logout() {
+        try {
+            if (this.config.logoutEndpoint && this.tokens) {
+                await fetch(this.config.logoutEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `${this.tokens.tokenType || 'Bearer'} ${this.tokens.accessToken}`,
+                    },
+                });
+            }
+        }
+        catch (error) {
+            console.error('Logout request failed:', error);
+        }
+        finally {
+            this.clearSession();
+            this.config.onLogout?.();
+        }
+    }
+    /**
+     * Refresh access token using refresh token
+     */
+    async refreshTokens() {
+        if (!this.tokens?.refreshToken || !this.config.refreshEndpoint) {
+            throw new Error('No refresh token available');
+        }
+        try {
+            let newTokens;
+            if (this.config.onTokenRefresh) {
+                newTokens = await this.config.onTokenRefresh(this.tokens);
+            }
+            else {
+                const response = await fetch(this.config.refreshEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refresh_token: this.tokens.refreshToken,
+                    }),
+                });
+                if (!response.ok) {
+                    throw new Error('Token refresh failed');
+                }
+                const data = await response.json();
+                newTokens = {
+                    accessToken: data.access_token || data.accessToken || data.token,
+                    refreshToken: data.refresh_token || data.refreshToken || this.tokens.refreshToken,
+                    tokenType: data.token_type || data.tokenType || 'Bearer',
+                    expiresIn: data.expires_in || data.expiresIn,
+                    expiresAt: data.expires_at || data.expiresAt,
+                };
+            }
+            this.setTokens(newTokens);
+            this.saveToStorage();
+            return newTokens;
+        }
+        catch (error) {
+            // If refresh fails, clear session
+            this.clearSession();
+            throw error;
+        }
+    }
+    /**
+     * Get authorization header value
+     */
+    getAuthHeader() {
+        if (!this.tokens)
+            return null;
+        return `${this.tokens.tokenType || 'Bearer'} ${this.tokens.accessToken}`;
+    }
+    /**
+     * Check if user is authenticated
+     */
+    isAuthenticated() {
+        if (!this.tokens)
+            return false;
+        // Check if token is expired
+        if (this.tokens.expiresAt) {
+            return Date.now() < this.tokens.expiresAt;
+        }
+        return true;
+    }
+    /**
+     * Get current user
+     */
+    getUser() {
+        return this.user;
+    }
+    /**
+     * Get current tokens
+     */
+    getTokens() {
+        return this.tokens;
+    }
+    /**
+     * Check if user has specific role
+     */
+    hasRole(role) {
+        return this.user?.roles?.includes(role) || false;
+    }
+    /**
+     * Check if user has specific permission
+     */
+    hasPermission(permission) {
+        return this.user?.permissions?.includes(permission) || false;
+    }
+    /**
+     * Update user data
+     */
+    updateUser(user) {
+        if (this.user) {
+            this.user = { ...this.user, ...user };
+            this.saveToStorage();
+        }
+    }
+    setTokens(tokens) {
+        this.tokens = {
+            ...tokens,
+            expiresAt: tokens.expiresAt || (tokens.expiresIn ? Date.now() + tokens.expiresIn * 1000 : undefined),
+        };
+    }
+    setUser(user) {
+        this.user = user;
+    }
+    clearSession() {
+        this.tokens = null;
+        this.user = null;
+        this.clearStorage();
+        this.clearRefreshTimer();
+    }
+    setupAutoRefresh() {
+        if (!this.config.autoRefresh || !this.tokens?.expiresAt)
+            return;
+        this.clearRefreshTimer();
+        const now = Date.now();
+        const expiresAt = this.tokens.expiresAt;
+        const threshold = (this.config.refreshThreshold || 300) * 1000;
+        const refreshTime = expiresAt - threshold - now;
+        if (refreshTime > 0) {
+            this.refreshTimer = setTimeout(() => {
+                this.refreshTokens().catch(error => {
+                    console.error('Auto token refresh failed:', error);
+                });
+            }, refreshTime);
+        }
+    }
+    clearRefreshTimer() {
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
+        }
+    }
+    saveToStorage() {
+        if (typeof window === 'undefined')
+            return;
+        const tokenKey = this.config.tokenStorageKey || 'auth_tokens';
+        const userKey = this.config.userStorageKey || 'auth_user';
+        try {
+            if (this.tokens) {
+                localStorage.setItem(tokenKey, JSON.stringify(this.tokens));
+            }
+            if (this.user) {
+                localStorage.setItem(userKey, JSON.stringify(this.user));
+            }
+        }
+        catch (error) {
+            console.error('Failed to save auth data to storage:', error);
+        }
+    }
+    loadFromStorage() {
+        if (typeof window === 'undefined')
+            return;
+        const tokenKey = this.config.tokenStorageKey || 'auth_tokens';
+        const userKey = this.config.userStorageKey || 'auth_user';
+        try {
+            const tokensStr = localStorage.getItem(tokenKey);
+            const userStr = localStorage.getItem(userKey);
+            if (tokensStr) {
+                this.tokens = JSON.parse(tokensStr);
+                // Check if token is expired
+                if (this.tokens && this.tokens.expiresAt && Date.now() >= this.tokens.expiresAt) {
+                    this.clearSession();
+                    return;
+                }
+            }
+            if (userStr) {
+                this.user = JSON.parse(userStr);
+            }
+        }
+        catch (error) {
+            console.error('Failed to load auth data from storage:', error);
+            this.clearSession();
+        }
+    }
+    clearStorage() {
+        if (typeof window === 'undefined')
+            return;
+        const tokenKey = this.config.tokenStorageKey || 'auth_tokens';
+        const userKey = this.config.userStorageKey || 'auth_user';
+        try {
+            localStorage.removeItem(tokenKey);
+            localStorage.removeItem(userKey);
+        }
+        catch (error) {
+            console.error('Failed to clear auth data from storage:', error);
+        }
+    }
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        this.clearRefreshTimer();
+    }
+}
+// Global auth manager instance (can be configured)
+let globalAuthManager = null;
+function configureAuth(config) {
+    globalAuthManager = new AuthManager(config);
+    return globalAuthManager;
+}
+function getAuthManager() {
+    return globalAuthManager;
+}
+function useAuth() {
+    const authManager = getAuthManager();
+    if (!authManager) {
+        throw new Error('Auth manager not configured. Call configureAuth() first.');
+    }
+    return {
+        user: authManager.getUser(),
+        isAuthenticated: authManager.isAuthenticated(),
+        login: (credentials) => authManager.login(credentials),
+        logout: () => authManager.logout(),
+        refreshTokens: () => authManager.refreshTokens(),
+        hasRole: (role) => authManager.hasRole(role),
+        hasPermission: (permission) => authManager.hasPermission(permission),
+        updateUser: (user) => authManager.updateUser(user),
+    };
+}
+
+/**
+ * Request/response validation utilities with schema support
+ */
+class Validator {
+    /**
+     * Validate data against a schema
+     */
+    validate(data, schema) {
+        const errors = [];
+        this.validateValue(data, schema, '', errors);
+        return {
+            valid: errors.length === 0,
+            errors,
+            data: errors.length === 0 ? data : undefined,
+        };
+    }
+    validateValue(value, schema, path, errors) {
+        // Check nullable
+        if (value === null || value === undefined) {
+            if (!schema.nullable) {
+                errors.push({
+                    path,
+                    message: 'Value cannot be null or undefined',
+                    value,
+                });
+            }
+            return;
+        }
+        // Check type
+        if (schema.type) {
+            const typeError = this.checkType(value, schema.type, path);
+            if (typeError) {
+                errors.push(typeError);
+                return;
+            }
+        }
+        // Check enum
+        if (schema.enum && !schema.enum.includes(value)) {
+            errors.push({
+                path,
+                message: `Value must be one of: ${schema.enum.join(', ')}`,
+                value,
+            });
+        }
+        // Check pattern
+        if (schema.pattern && typeof value === 'string') {
+            if (!schema.pattern.test(value)) {
+                errors.push({
+                    path,
+                    message: 'Value does not match required pattern',
+                    value,
+                });
+            }
+        }
+        // Check min/max for strings
+        if (typeof value === 'string') {
+            if (schema.minLength !== undefined && value.length < schema.minLength) {
+                errors.push({
+                    path,
+                    message: `Value must be at least ${schema.minLength} characters`,
+                    value,
+                });
+            }
+            if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+                errors.push({
+                    path,
+                    message: `Value must be at most ${schema.maxLength} characters`,
+                    value,
+                });
+            }
+        }
+        // Check min/max for numbers
+        if (typeof value === 'number') {
+            if (schema.minimum !== undefined && value < schema.minimum) {
+                errors.push({
+                    path,
+                    message: `Value must be at least ${schema.minimum}`,
+                    value,
+                });
+            }
+            if (schema.maximum !== undefined && value > schema.maximum) {
+                errors.push({
+                    path,
+                    message: `Value must be at most ${schema.maximum}`,
+                    value,
+                });
+            }
+        }
+        // Check object properties
+        if (schema.type === 'object' && schema.properties && typeof value === 'object') {
+            // Check required properties
+            if (schema.required) {
+                for (const prop of schema.required) {
+                    if (!(prop in value) || value[prop] === undefined || value[prop] === null) {
+                        errors.push({
+                            path: path ? `${path}.${prop}` : prop,
+                            message: 'Property is required',
+                            value: undefined,
+                        });
+                    }
+                }
+            }
+            // Validate each property
+            for (const [prop, propSchema] of Object.entries(schema.properties)) {
+                if (prop in value) {
+                    this.validateValue(value[prop], propSchema, path ? `${path}.${prop}` : prop, errors);
+                }
+            }
+        }
+        // Check array items
+        if (schema.type === 'array' && schema.items && Array.isArray(value)) {
+            value.forEach((item, index) => {
+                this.validateValue(item, schema.items, `${path}[${index}]`, errors);
+            });
+        }
+        // Custom validation
+        if (schema.custom) {
+            const customResult = schema.custom(value);
+            if (customResult !== true) {
+                errors.push({
+                    path,
+                    message: typeof customResult === 'string' ? customResult : 'Custom validation failed',
+                    value,
+                });
+            }
+        }
+    }
+    checkType(value, type, path) {
+        const actualType = Array.isArray(value) ? 'array' : typeof value;
+        if (actualType !== type) {
+            return {
+                path,
+                message: `Expected type ${type}, got ${actualType}`,
+                value,
+            };
+        }
+        return null;
+    }
+    /**
+     * Create a schema builder for easier schema creation
+     */
+    static schema() {
+        return new SchemaBuilder();
+    }
+}
+class SchemaBuilder {
+    constructor() {
+        this.schema = {};
+    }
+    type(type) {
+        this.schema.type = type;
+        return this;
+    }
+    properties(properties) {
+        this.schema.properties = properties;
+        return this;
+    }
+    items(items) {
+        this.schema.items = items;
+        return this;
+    }
+    required(required) {
+        this.schema.required = required;
+        return this;
+    }
+    minLength(minLength) {
+        this.schema.minLength = minLength;
+        return this;
+    }
+    maxLength(maxLength) {
+        this.schema.maxLength = maxLength;
+        return this;
+    }
+    minimum(minimum) {
+        this.schema.minimum = minimum;
+        return this;
+    }
+    maximum(maximum) {
+        this.schema.maximum = maximum;
+        return this;
+    }
+    pattern(pattern) {
+        this.schema.pattern = pattern;
+        return this;
+    }
+    enum(values) {
+        this.schema.enum = values;
+        return this;
+    }
+    custom(validator) {
+        this.schema.custom = validator;
+        return this;
+    }
+    nullable(nullable = true) {
+        this.schema.nullable = nullable;
+        return this;
+    }
+    build() {
+        return { ...this.schema };
+    }
+}
+// Common schema templates
+const Schemas = {
+    string: (options) => ({
+        type: 'string',
+        ...options,
+    }),
+    number: (options) => ({
+        type: 'number',
+        ...options,
+    }),
+    boolean: () => ({
+        type: 'boolean',
+    }),
+    array: (items) => ({
+        type: 'array',
+        items,
+    }),
+    object: (properties, required) => ({
+        type: 'object',
+        properties,
+        required,
+    }),
+    email: () => ({
+        type: 'string',
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    }),
+    url: () => ({
+        type: 'string',
+        pattern: /^https?:\/\/.+/,
+    }),
+    uuid: () => ({
+        type: 'string',
+        pattern: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    }),
+};
+// Global validator instance
+const validator = new Validator();
+// Convenience functions
+function validate(data, schema) {
+    return validator.validate(data, schema);
+}
+function createSchema() {
+    return Validator.schema();
+}
+
+/**
  * OmniRequest class extends RequestClient with additional static methods
  */
 class OmniRequest extends RequestClient {
@@ -2056,5 +3204,5 @@ omnirequest.create = (config) => {
 // Add defaults to the instance
 omnirequest.defaults = OmniRequest.defaults;
 
-export { AuthPlugin, AutoAuthPlugin, CacheMiddleware, CommonTransformers, ConcurrencyRateLimitMiddleware, DeduplicationMiddleware, IntelligentRetryMiddleware, LoggerPlugin, OfflineSyncMiddleware, OmniRequest, RateLimitPlugin, RetryMiddleware, RevalidationCacheMiddleware, TimeoutMiddleware, TransformMiddleware, createSimpleAPI, omnirequest as default, del, fetch$1 as fetch, get, patch, post, put, request, setupAutoAuth, setupLogger, setupRateLimiter, simpleClient, transformError, transformRequestData, transformResponseData };
+export { AuthManager, AuthPlugin, AutoAuthPlugin, CacheMiddleware, CommonTransformers, ConcurrencyRateLimitMiddleware, DeduplicationMiddleware, FileDownloader, FileUploader, IntelligentRetryMiddleware, LoggerPlugin, OfflineSyncMiddleware, OmniRequest, PersistentCache, RateLimitMiddleware, RateLimitPlugin, RetryMiddleware, RevalidationCacheMiddleware, SchemaBuilder, Schemas, TimeoutMiddleware, TransformMiddleware, Validator, configureAuth, createSchema, createSimpleAPI, omnirequest as default, del, downloadFile, fetch$1 as fetch, fileDownloader, fileUploader, get, getAuthManager, patch, persistentCache, post, put, request, setupAutoAuth, setupLogger, setupRateLimiter, simpleClient, transformError, transformRequestData, transformResponseData, uploadFile, useAuth, validate, validator };
 //# sourceMappingURL=index.js.map

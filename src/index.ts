@@ -17,6 +17,15 @@ export * from './middleware';
 // Export utilities
 export * from './utils';
 
+// Export cache
+export * from './cache';
+
+// Export auth
+export * from './auth';
+
+// Export validation
+export * from './validation';
+
 /**
  * OmniRequest class extends RequestClient with additional static methods
  */

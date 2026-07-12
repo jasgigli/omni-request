@@ -8,6 +8,9 @@ export * from './simple';
 export * from './plugins';
 export * from './middleware';
 export * from './utils';
+export * from './cache';
+export * from './auth';
+export * from './validation';
 /**
  * OmniRequest class extends RequestClient with additional static methods
  */

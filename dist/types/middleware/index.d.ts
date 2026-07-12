@@ -7,3 +7,4 @@ export * from './concurrencyRateLimit';
 export * from './intelligentRetry';
 export * from './deduplication';
 export * from './offlineSync';
+export * from './rateLimit';

@@ -24,7 +24,7 @@ OmniRequest is an enterprise-grade HTTP client designed for modern applications 
 - **Developer Experience**: Intuitive API, comprehensive TypeScript support, and React integration
 - **Scalability**: Modular architecture supporting plugins and middleware for custom workflows
 
-## ✨ Enterprise Features
+## ✨ Complete Full-Stack Solution
 
 ### 🚀 Zero-Config API
 ```javascript
@@ -35,14 +35,85 @@ const users = await get('https://api.example.com/users');
 const newUser = await post('https://api.example.com/users', { name: 'John' });
 ```
 
-### ⚛️ React Integration
+### ⚛️ React Hooks
 ```javascript
-import { useQuery, useMutation } from 'omnirequest/react';
+import { useQuery, useMutation, useInfiniteQuery } from 'omnirequest';
 
-// Built-in state management for React applications
-const { data, loading, error } = useQuery('users', () => 
-  get('https://api.example.com/users')
+// Data fetching with automatic caching and loading states
+const { data, loading, error, refetch } = useQuery(
+  'users',
+  () => get('https://api.example.com/users'),
+  { staleTime: 60000 }
 );
+
+// Mutations with optimistic updates
+const { mutate } = useMutation(
+  (data) => post('https://api.example.com/users', data),
+  { onSuccess: () => refetch() }
+);
+
+// Infinite scrolling
+const { data, fetchNextPage, hasNextPage } = useInfiniteQuery(
+  'posts',
+  (page) => get(`https://api.example.com/posts?page=${page}`),
+  { getNextPageParam: (lastPage) => lastPage.nextPage }
+);
+```
+
+### 🔐 Authentication
+```javascript
+import { configureAuth, useAuth } from 'omnirequest';
+
+// Configure authentication
+configureAuth({
+  loginEndpoint: '/api/auth/login',
+  refreshEndpoint: '/api/auth/refresh',
+  autoRefresh: true
+});
+
+// Use in components
+const { user, login, logout, isAuthenticated } = useAuth();
+```
+
+### 📁 File Operations
+```javascript
+import { uploadFile, downloadFile } from 'omnirequest';
+
+// Upload with progress tracking
+await uploadFile('/api/upload', file, {
+  onProgress: (progress) => console.log(`${progress.percentage}%`)
+});
+
+// Download with progress
+await downloadFile('/api/download/file.pdf', 'file.pdf', {
+  onProgress: (progress) => console.log(`${progress.percentage}%`)
+});
+```
+
+### 💾 Persistent Caching
+```javascript
+import { persistentCache } from 'omnirequest';
+
+// IndexedDB + localStorage fallback for offline support
+await persistentCache.set('users', { data: users, timestamp: Date.now() });
+const cached = await persistentCache.get('users');
+```
+
+### ✅ Data Validation
+```javascript
+import { validate, createSchema, Schemas } from 'omnirequest';
+
+// Schema-based validation
+const userSchema = createSchema()
+  .type('object')
+  .properties({
+    email: Schemas.email(),
+    age: Schemas.number().minimum(18)
+  })
+  .required(['email', 'age'])
+  .build();
+
+const result = validate(userData, userSchema);
 ```
 
 ### 🔄 Advanced Middleware System
@@ -50,24 +121,30 @@ const { data, loading, error } = useQuery('users', () =>
 - Authentication and authorization
 - Logging and telemetry
 - Custom business logic integration
-
-### � Performance Optimization
+- Rate limiting with token bucket
 - Request deduplication
-- Intelligent caching strategies
+- Offline sync
+
+### 📊 Performance Optimization
+- Request deduplication
+- Intelligent caching (in-memory + persistent)
 - Connection pooling
 - Response compression
+- Request batching
 
 ### 🛡️ Resilience Patterns
 - Automatic retry with exponential backoff
 - Circuit breaker for failing services
 - Rate limiting and throttling
 - Timeout management
+- Request cancellation
 
 ### 🔒 Security Features
 - Automatic token refresh
 - Request signing
 - CSRF protection
 - Secure header management
+- Session management
 
 ## 📦 Installation
 
@@ -507,12 +584,15 @@ main();
 
 ## 💼 Use Cases
 
+- **Full-Stack Applications**: Complete solution for frontend and backend API communication
 - **Enterprise Applications**: Complex business logic with multiple API integrations
 - **Microservices Architecture**: Service-to-service communication with resilience patterns
-- **Real-time Applications**: WebSocket support with automatic reconnection
 - **Mobile Applications**: Offline-first capabilities with data synchronization
 - **Data-Intensive Applications**: Efficient caching and data management
 - **Secure Applications**: Built-in authentication and security features
+- **Real-time Applications**: WebSocket support with automatic reconnection
+- **File Management**: Upload/download with progress tracking
+- **Form Handling**: Built-in validation and transformation utilities
 
 ## 🔧 Configuration Options
 
