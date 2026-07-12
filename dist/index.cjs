@@ -1,5 +1,5 @@
 /**
- * omnirequest v2.0.1
+ * omnirequest v2.1.0
  * A modern cross-platform TypeScript-based HTTP client for Node.js, browsers, Deno, and more, featuring advanced caching, concurrency limiting, intelligent retries, circuit breakers, and automatic token refresh.
  *
  * @author Junaid Ali Shah Gigli <overview.jjj@gmail.com>
@@ -134,6 +134,8 @@ var ErrorType;
     ErrorType["REQUEST"] = "REQUEST_ERROR";
     ErrorType["CIRCUIT_OPEN"] = "CIRCUIT_OPEN";
     ErrorType["CANCELED"] = "CANCELED";
+    ErrorType["AUTH"] = "AUTH_ERROR";
+    ErrorType["RATE_LIMIT"] = "RATE_LIMIT_ERROR";
 })(ErrorType || (ErrorType = {}));
 class RequestError extends Error {
     constructor(options) {
@@ -143,6 +145,52 @@ class RequestError extends Error {
         this.config = options.config || {};
         this.response = options.response;
         this.type = options.type || ErrorType.NETWORK;
+        this.code = options.code;
+        if (options.stack) {
+            this.stack = options.stack;
+        }
+    }
+    /**
+     * Check if error is a network error
+     */
+    isNetworkError() {
+        return this.type === ErrorType.NETWORK;
+    }
+    /**
+     * Check if error is a timeout error
+     */
+    isTimeoutError() {
+        return this.type === ErrorType.TIMEOUT;
+    }
+    /**
+     * Check if error is a server error (5xx)
+     */
+    isServerError() {
+        return this.status >= 500 && this.status < 600;
+    }
+    /**
+     * Check if error is a client error (4xx)
+     */
+    isClientError() {
+        return this.status >= 400 && this.status < 500;
+    }
+    /**
+     * Check if error is an authentication error
+     */
+    isAuthError() {
+        return this.status === 401 || this.type === ErrorType.AUTH;
+    }
+    /**
+     * Check if error is a rate limit error
+     */
+    isRateLimitError() {
+        return this.status === 429 || this.type === ErrorType.RATE_LIMIT;
+    }
+    /**
+     * Get retry information if available
+     */
+    getRetryInfo() {
+        return this._retry;
     }
 }
 
@@ -346,6 +394,10 @@ class RequestClient {
             }
             // Apply middleware pre-request
             finalConfig = await this.middleware.applyRequestMiddleware(finalConfig);
+            // If this is a deduplicated request, wait for the original request's promise
+            if (finalConfig._deduplicated && finalConfig._deduplicationPromise) {
+                return finalConfig._deduplicationPromise;
+            }
             // Get the appropriate adapter for the current environment
             const adapter = getAdapter();
             // Make the request using the adapter's request method
@@ -365,7 +417,8 @@ class RequestClient {
             }
             return response;
         }
-        catch (error) {
+        catch (err) {
+            const error = err;
             // Apply response interceptors to errors
             try {
                 await this.interceptors.response.apply(error);
@@ -375,6 +428,9 @@ class RequestClient {
             }
             // Handle retry if middleware indicated retry
             if (error._retry && error._retry.count <= error._retry.maxRetries) {
+                // Wait for the delay specified by the middleware
+                await new Promise(resolve => setTimeout(resolve, error._retry.delay));
+                // Retry the request with incremented retry count
                 return this.request({
                     ...finalConfig,
                     _retryCount: error._retry.count
@@ -1496,13 +1552,12 @@ class IntelligentRetryMiddleware {
                 throw error;
             }
             const delay = this.calculateDelay(retryCount);
-            // Attach retry information to the error for the request client to handle
+            // Attach retry info to the error so the client knows to retry
             error._retry = {
                 count: retryCount,
                 delay,
                 maxRetries: this.config.maxRetries
             };
-            await this.sleep(delay);
             throw error;
         };
         this.config = {
@@ -1579,11 +1634,12 @@ class DeduplicationMiddleware {
             return config;
         }
         const key = this.getRequestKey(config);
-        // If a request with this key is already pending, attach a flag
-        // The response middleware will handle returning the cached response
+        // If a request with this key is already pending, attach the promise
         if (this.pendingRequests.has(key)) {
+            const pending = this.pendingRequests.get(key);
             config._deduplicated = true;
             config._deduplicationKey = key;
+            config._deduplicationPromise = pending.promise;
             return config;
         }
         // Create a deferred promise for this request
@@ -1593,39 +1649,49 @@ class DeduplicationMiddleware {
             resolvePromise = resolve;
             rejectPromise = reject;
         });
-        this.pendingRequests.set(key, promise);
-        config._deduplicationPromise = { resolve: resolvePromise, reject: rejectPromise };
-        // Clean up after a short delay to allow for near-simultaneous requests
-        setTimeout(() => {
-            this.pendingRequests.delete(key);
-        }, 100);
+        this.pendingRequests.set(key, {
+            promise,
+            resolve: resolvePromise,
+            reject: rejectPromise
+        });
+        // Mark this as the original request
+        config._isOriginalDeduplication = true;
+        config._deduplicationKey = key;
         return config;
     }
     async response(response) {
         const config = response.config;
-        // If this is a deduplicated request, return the pending response
+        // If this is a deduplicated request, wait for the original request's promise
         if (config._deduplicated && config._deduplicationKey) {
-            const pendingResponse = this.pendingRequests.get(config._deduplicationKey);
-            if (pendingResponse) {
-                return pendingResponse;
+            const pending = this.pendingRequests.get(config._deduplicationKey);
+            if (pending) {
+                return pending.promise;
             }
         }
         // If this is the original request, resolve the pending promise
-        if (config._deduplicationPromise) {
-            config._deduplicationPromise.resolve(response);
+        if (config._isOriginalDeduplication && config._deduplicationKey) {
+            const pending = this.pendingRequests.get(config._deduplicationKey);
+            if (pending) {
+                pending.resolve(response);
+                // Clean up after a short delay to allow for near-simultaneous requests
+                setTimeout(() => {
+                    this.pendingRequests.delete(config._deduplicationKey);
+                }, 100);
+            }
         }
         return response;
     }
     async error(error) {
         const config = error.config;
         // Clean up pending request on error
-        if (config) {
-            const key = this.getRequestKey(config);
-            // Reject the pending promise if this was the original request
-            if (config._deduplicationPromise) {
-                config._deduplicationPromise.reject(error);
+        if (config && config._deduplicationKey) {
+            const pending = this.pendingRequests.get(config._deduplicationKey);
+            // If this was the original request, reject the pending promise
+            if (config._isOriginalDeduplication && pending) {
+                pending.reject(error);
+                // Clean up immediately on error
+                this.pendingRequests.delete(config._deduplicationKey);
             }
-            this.pendingRequests.delete(key);
         }
         throw error;
     }
@@ -1827,6 +1893,176 @@ class OfflineSyncMiddleware {
 }
 
 /**
+ * Request and response transformation utilities
+ */
+/**
+ * Transform request data before sending
+ */
+function transformRequestData(data, transformer) {
+    if (!transformer)
+        return data;
+    try {
+        return transformer(data);
+    }
+    catch (error) {
+        console.error('Request transform error:', error);
+        return data;
+    }
+}
+/**
+ * Transform response data after receiving
+ */
+function transformResponseData(data, transformer) {
+    if (!transformer)
+        return data;
+    try {
+        return transformer(data);
+    }
+    catch (error) {
+        console.error('Response transform error:', error);
+        return data;
+    }
+}
+/**
+ * Transform error before throwing
+ */
+function transformError(error, transformer) {
+    if (!transformer)
+        return error;
+    try {
+        return transformer(error);
+    }
+    catch (transformError) {
+        console.error('Error transform error:', transformError);
+        return error;
+    }
+}
+/**
+ * Common transformers
+ */
+const CommonTransformers = {
+    /**
+     * Convert object to URL-encoded string
+     */
+    toURLEncoded: (data) => {
+        return new URLSearchParams(data).toString();
+    },
+    /**
+     * Convert object to JSON string
+     */
+    toJSON: (data) => {
+        return JSON.stringify(data);
+    },
+    /**
+     * Parse JSON string to object
+     */
+    fromJSON: (data) => {
+        try {
+            return JSON.parse(data);
+        }
+        catch {
+            return data;
+        }
+    },
+    /**
+     * Convert camelCase to snake_case
+     */
+    camelToSnake: (data) => {
+        if (typeof data !== 'object' || data === null)
+            return data;
+        if (Array.isArray(data)) {
+            return data.map(item => CommonTransformers.camelToSnake(item));
+        }
+        const result = {};
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+                result[snakeKey] = CommonTransformers.camelToSnake(data[key]);
+            }
+        }
+        return result;
+    },
+    /**
+     * Convert snake_case to camelCase
+     */
+    snakeToCamel: (data) => {
+        if (typeof data !== 'object' || data === null)
+            return data;
+        if (Array.isArray(data)) {
+            return data.map(item => CommonTransformers.snakeToCamel(item));
+        }
+        const result = {};
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+                result[camelKey] = CommonTransformers.snakeToCamel(data[key]);
+            }
+        }
+        return result;
+    },
+    /**
+     * Trim string values in object
+     */
+    trimStrings: (data) => {
+        if (typeof data === 'string') {
+            return data.trim();
+        }
+        if (typeof data !== 'object' || data === null)
+            return data;
+        if (Array.isArray(data)) {
+            return data.map(item => CommonTransformers.trimStrings(item));
+        }
+        const result = {};
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                result[key] = CommonTransformers.trimStrings(data[key]);
+            }
+        }
+        return result;
+    },
+    /**
+     * Convert dates to ISO strings
+     */
+    datesToISO: (data) => {
+        if (data instanceof Date) {
+            return data.toISOString();
+        }
+        if (typeof data !== 'object' || data === null)
+            return data;
+        if (Array.isArray(data)) {
+            return data.map(item => CommonTransformers.datesToISO(item));
+        }
+        const result = {};
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                result[key] = CommonTransformers.datesToISO(data[key]);
+            }
+        }
+        return result;
+    },
+    /**
+     * Convert ISO strings to Date objects
+     */
+    isoToDates: (data) => {
+        if (typeof data === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(data)) {
+            return new Date(data);
+        }
+        if (typeof data !== 'object' || data === null)
+            return data;
+        if (Array.isArray(data)) {
+            return data.map(item => CommonTransformers.isoToDates(item));
+        }
+        const result = {};
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                result[key] = CommonTransformers.isoToDates(data[key]);
+            }
+        }
+        return result;
+    }
+};
+
+/**
  * OmniRequest class extends RequestClient with additional static methods
  */
 class OmniRequest extends RequestClient {
@@ -1847,6 +2083,7 @@ omnirequest.defaults = OmniRequest.defaults;
 exports.AuthPlugin = AuthPlugin;
 exports.AutoAuthPlugin = AutoAuthPlugin;
 exports.CacheMiddleware = CacheMiddleware;
+exports.CommonTransformers = CommonTransformers;
 exports.ConcurrencyRateLimitMiddleware = ConcurrencyRateLimitMiddleware;
 exports.DeduplicationMiddleware = DeduplicationMiddleware;
 exports.IntelligentRetryMiddleware = IntelligentRetryMiddleware;
@@ -1871,4 +2108,7 @@ exports.setupAutoAuth = setupAutoAuth;
 exports.setupLogger = setupLogger;
 exports.setupRateLimiter = setupRateLimiter;
 exports.simpleClient = simpleClient;
+exports.transformError = transformError;
+exports.transformRequestData = transformRequestData;
+exports.transformResponseData = transformResponseData;
 //# sourceMappingURL=index.cjs.map

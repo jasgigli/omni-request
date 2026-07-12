@@ -14,6 +14,9 @@ export * from './plugins';
 // Export middleware
 export * from './middleware';
 
+// Export utilities
+export * from './utils';
+
 /**
  * OmniRequest class extends RequestClient with additional static methods
  */

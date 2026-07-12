@@ -7,6 +7,7 @@ import type { Plugin } from "./types/plugin";
 export * from './simple';
 export * from './plugins';
 export * from './middleware';
+export * from './utils';
 /**
  * OmniRequest class extends RequestClient with additional static methods
  */

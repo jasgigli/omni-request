@@ -92,15 +92,13 @@ export class IntelligentRetryMiddleware implements Middleware {
     }
 
     const delay = this.calculateDelay(retryCount);
-    
-    // Attach retry information to the error for the request client to handle
+
+    // Attach retry info to the error so the client knows to retry
     error._retry = {
       count: retryCount,
       delay,
       maxRetries: this.config.maxRetries
     };
-    
-    await this.sleep(delay);
 
     throw error;
   };

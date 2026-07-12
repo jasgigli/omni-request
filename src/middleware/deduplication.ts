@@ -8,7 +8,11 @@ import { ResponseData } from '../types/response';
  * Instead, all duplicate requests wait for the same response
  */
 export class DeduplicationMiddleware implements Middleware {
-  private pendingRequests = new Map<string, Promise<ResponseData>>();
+  private pendingRequests = new Map<string, {
+    promise: Promise<ResponseData>;
+    resolve: (value: ResponseData) => void;
+    reject: (error: any) => void;
+  }>();
 
   async request(config: RequestConfig): Promise<RequestConfig> {
     // Only deduplicate GET requests by default
@@ -18,11 +22,12 @@ export class DeduplicationMiddleware implements Middleware {
 
     const key = this.getRequestKey(config);
     
-    // If a request with this key is already pending, attach a flag
-    // The response middleware will handle returning the cached response
+    // If a request with this key is already pending, attach the promise
     if (this.pendingRequests.has(key)) {
+      const pending = this.pendingRequests.get(key)!;
       config._deduplicated = true;
       config._deduplicationKey = key;
+      config._deduplicationPromise = pending.promise;
       return config;
     }
 
@@ -35,13 +40,15 @@ export class DeduplicationMiddleware implements Middleware {
       rejectPromise = reject;
     });
     
-    this.pendingRequests.set(key, promise);
-    config._deduplicationPromise = { resolve: resolvePromise!, reject: rejectPromise! };
+    this.pendingRequests.set(key, {
+      promise,
+      resolve: resolvePromise!,
+      reject: rejectPromise!
+    });
     
-    // Clean up after a short delay to allow for near-simultaneous requests
-    setTimeout(() => {
-      this.pendingRequests.delete(key);
-    }, 100);
+    // Mark this as the original request
+    config._isOriginalDeduplication = true;
+    config._deduplicationKey = key;
 
     return config;
   }
@@ -49,17 +56,25 @@ export class DeduplicationMiddleware implements Middleware {
   async response(response: ResponseData): Promise<ResponseData> {
     const config = response.config;
     
-    // If this is a deduplicated request, return the pending response
+    // If this is a deduplicated request, wait for the original request's promise
     if (config._deduplicated && config._deduplicationKey) {
-      const pendingResponse = this.pendingRequests.get(config._deduplicationKey);
-      if (pendingResponse) {
-        return pendingResponse;
+      const pending = this.pendingRequests.get(config._deduplicationKey);
+      if (pending) {
+        return pending.promise;
       }
     }
 
     // If this is the original request, resolve the pending promise
-    if (config._deduplicationPromise) {
-      config._deduplicationPromise.resolve(response);
+    if (config._isOriginalDeduplication && config._deduplicationKey) {
+      const pending = this.pendingRequests.get(config._deduplicationKey);
+      if (pending) {
+        pending.resolve(response);
+        
+        // Clean up after a short delay to allow for near-simultaneous requests
+        setTimeout(() => {
+          this.pendingRequests.delete(config._deduplicationKey!);
+        }, 100);
+      }
     }
 
     return response;
@@ -69,15 +84,16 @@ export class DeduplicationMiddleware implements Middleware {
     const config = error.config;
     
     // Clean up pending request on error
-    if (config) {
-      const key = this.getRequestKey(config);
+    if (config && config._deduplicationKey) {
+      const pending = this.pendingRequests.get(config._deduplicationKey);
       
-      // Reject the pending promise if this was the original request
-      if (config._deduplicationPromise) {
-        config._deduplicationPromise.reject(error);
+      // If this was the original request, reject the pending promise
+      if (config._isOriginalDeduplication && pending) {
+        pending.reject(error);
+        
+        // Clean up immediately on error
+        this.pendingRequests.delete(config._deduplicationKey);
       }
-      
-      this.pendingRequests.delete(key);
     }
 
     throw error;

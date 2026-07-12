@@ -58,6 +58,11 @@ export class RequestClient {
       // Apply middleware pre-request
       finalConfig = await this.middleware.applyRequestMiddleware(finalConfig);
 
+      // If this is a deduplicated request, wait for the original request's promise
+      if (finalConfig._deduplicated && finalConfig._deduplicationPromise) {
+        return finalConfig._deduplicationPromise as Promise<ResponseData<T>>;
+      }
+
       // Get the appropriate adapter for the current environment
       const adapter = getAdapter();
 
@@ -80,7 +85,9 @@ export class RequestClient {
       }
 
       return response;
-    } catch (error) {
+    } catch (err) {
+      const error = err as any;
+      
       // Apply response interceptors to errors
       try {
         await this.interceptors.response.apply(error);
@@ -90,6 +97,10 @@ export class RequestClient {
       
       // Handle retry if middleware indicated retry
       if (error._retry && error._retry.count <= error._retry.maxRetries) {
+        // Wait for the delay specified by the middleware
+        await new Promise(resolve => setTimeout(resolve, error._retry.delay));
+        
+        // Retry the request with incremented retry count
         return this.request<T>({
           ...finalConfig,
           _retryCount: error._retry.count
