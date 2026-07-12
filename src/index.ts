@@ -5,6 +5,15 @@ import type { HttpMethod } from "./types/http";
 import type { ResponseData } from "./types/response";
 import type { Plugin } from "./types/plugin";
 
+// Export simple API
+export * from './simple';
+
+// Export plugins
+export * from './plugins';
+
+// Export middleware
+export * from './middleware';
+
 /**
  * OmniRequest class extends RequestClient with additional static methods
  */
@@ -16,8 +25,14 @@ export class OmniRequest extends RequestClient {
   static defaults = defaultConfig;
 }
 
+// Extended interface for the default instance
+interface OmniRequestInstance extends RequestClient {
+  create: (config?: Partial<RequestConfig>) => OmniRequest;
+  defaults: typeof defaultConfig;
+}
+
 // Create default instance
-const omnirequest = new OmniRequest(defaultConfig);
+const omnirequest = new OmniRequest(defaultConfig) as OmniRequestInstance;
 
 // Add create method to the instance
 omnirequest.create = (config?: Partial<RequestConfig>) => {

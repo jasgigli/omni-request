@@ -25,6 +25,11 @@ export class RequestError extends Error {
   config: RequestConfig;
   response?: any;
   type: ErrorType;
+  _retry?: {
+    count: number;
+    delay: number;
+    maxRetries: number;
+  };
 
   constructor(options: RequestErrorOptions) {
     super(options.message);

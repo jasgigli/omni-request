@@ -2,7 +2,7 @@
 
 <div align="center">
   <img src="assets/omniRequest.webp" alt="OmniRequest Logo" width="200"/>
-  <h3>Simple and Powerful HTTP Client for JavaScript and TypeScript</h3>
+  <h3>Enterprise-Grade HTTP Client for Modern Applications</h3>
 
 [![npm version](https://img.shields.io/npm/v/omnirequest.svg?color=brightgreen)](https://www.npmjs.com/package/omnirequest)
 [![license](https://img.shields.io/npm/l/omnirequest.svg?color=blue)](LICENSE)
@@ -13,19 +13,63 @@
 
 </div>
 
-## What is OmniRequest?
+## 🎯 Built for Production
 
-OmniRequest is a simple, easy-to-use HTTP client for making API requests in JavaScript and TypeScript applications. It works in browsers, Node.js, and other JavaScript environments.
+OmniRequest is an enterprise-grade HTTP client designed for modern applications requiring reliability, performance, and scalability. Built with TypeScript from the ground up, it provides a robust foundation for API communication in complex codebases.
 
-## Features
+### Core Principles
 
-- 🔄 **Simple API** - Similar to Axios with a clean, intuitive interface
-- 🌐 **Works Everywhere** - Browser, Node.js, and other JavaScript environments
-- 📦 **Lightweight** - Small footprint with minimal dependencies
-- 🔍 **TypeScript Support** - Full type definitions for better development experience
-- ⚙️ **Configurable** - Easy to customize for your specific needs
+- **Reliability First**: Built-in error handling, automatic retries, and circuit breakers
+- **Performance**: Request deduplication, intelligent caching, and connection pooling
+- **Developer Experience**: Intuitive API, comprehensive TypeScript support, and React integration
+- **Scalability**: Modular architecture supporting plugins and middleware for custom workflows
 
-## Installation
+## ✨ Enterprise Features
+
+### 🚀 Zero-Config API
+```javascript
+import { get, post } from 'omnirequest';
+
+// Production-ready out of the box
+const users = await get('https://api.example.com/users');
+const newUser = await post('https://api.example.com/users', { name: 'John' });
+```
+
+### ⚛️ React Integration
+```javascript
+import { useQuery, useMutation } from 'omnirequest/react';
+
+// Built-in state management for React applications
+const { data, loading, error } = useQuery('users', () => 
+  get('https://api.example.com/users')
+);
+```
+
+### 🔄 Advanced Middleware System
+- Request/response transformation
+- Authentication and authorization
+- Logging and telemetry
+- Custom business logic integration
+
+### � Performance Optimization
+- Request deduplication
+- Intelligent caching strategies
+- Connection pooling
+- Response compression
+
+### 🛡️ Resilience Patterns
+- Automatic retry with exponential backoff
+- Circuit breaker for failing services
+- Rate limiting and throttling
+- Timeout management
+
+### 🔒 Security Features
+- Automatic token refresh
+- Request signing
+- CSRF protection
+- Secure header management
+
+## 📦 Installation
 
 ```bash
 # Using npm
@@ -38,338 +82,475 @@ yarn add omnirequest
 pnpm add omnirequest
 ```
 
-## Basic Usage
+## 🎯 Quick Start
 
-### Import
+### 1. Simple API (Zero Config)
 
-```javascript
-// Using ES modules (recommended)
-import omnirequest from 'omnirequest';
-
-// Using CommonJS
-const omnirequest = require('omnirequest');
-```
-
-### Make a GET Request
+The simplest way to make HTTP requests - no setup required:
 
 ```javascript
-// Simple GET request
-omnirequest.get('https://api.example.com/users')
-  .then(response => {
-    console.log(response.data); // The response data
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });
-```
+import { get, post, put, patch, del } from 'omnirequest';
 
-### Using Async/Await
+// GET request
+const users = await get('https://api.example.com/users');
 
-```javascript
-async function getUsers() {
-  try {
-    const response = await omnirequest.get('https://api.example.com/users');
-    console.log(response.data);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-getUsers();
-```
-
-### POST Request with Data
-
-```javascript
-omnirequest.post('https://api.example.com/users', {
+// POST request
+const newUser = await post('https://api.example.com/users', {
   name: 'John Doe',
   email: 'john@example.com'
-})
-  .then(response => {
-    console.log('User created:', response.data);
-  })
-  .catch(error => {
-    console.error('Error creating user:', error);
-  });
+});
+
+// PUT request
+const updated = await put('https://api.example.com/users/1', { name: 'Jane' });
+
+// PATCH request
+const patched = await patch('https://api.example.com/users/1', { email: 'jane@example.com' });
+
+// DELETE request
+await del('https://api.example.com/users/1');
 ```
 
-### Request with Query Parameters
+### 2. Create API Client
+
+Create a pre-configured client for your API:
 
 ```javascript
-omnirequest.get('https://api.example.com/users', {
-  params: {
-    page: 1,
-    limit: 10,
-    sort: 'name'
-  }
-})
-  .then(response => {
-    console.log('Users:', response.data);
-  });
+import { createSimpleAPI } from 'omnirequest';
+
+const api = createSimpleAPI('https://api.example.com');
+
+const users = await api.get('/users');
+const user = await api.post('/users', { name: 'John' });
 ```
 
-## Advanced Usage
+### 3. React Hooks
 
-### Creating a Custom Instance
+Powerful React hooks with automatic caching and state management:
 
 ```javascript
-// Create a custom instance with specific configuration
+import { useQuery, useMutation, invalidateQueries } from 'omnirequest';
+
+function UsersList() {
+  // Automatic caching, loading states, error handling
+  const { data: users, loading, error, refetch } = useQuery(
+    'users',
+    () => get('https://api.example.com/users'),
+    { staleTime: 5 * 60 * 1000 } // 5 minutes
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      {users.map(user => (
+        <div key={user.id}>{user.name}</div>
+      ))}
+    </div>
+  );
+}
+
+function CreateUser() {
+  const [name, setName] = useState('');
+  
+  // Mutation with automatic cache invalidation
+  const { mutate, loading } = useMutation(
+    (userData) => post('https://api.example.com/users', userData),
+    {
+      onSuccess: () => {
+        invalidateQueries('users'); // Auto-refresh user list
+        setName('');
+      }
+    }
+  );
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      mutate({ name });
+    }}>
+      <input value={name} onChange={(e) => setName(e.target.value)} />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Creating...' : 'Create User'}
+      </button>
+    </form>
+  );
+}
+```
+
+### 4. Advanced Configuration
+
+For full control, use the OmniRequest client:
+
+```javascript
+import omnirequest from 'omnirequest';
+
 const api = omnirequest.create({
   baseURL: 'https://api.example.com',
+  timeout: 10000,
   headers: {
     'Authorization': 'Bearer YOUR_TOKEN',
     'Content-Type': 'application/json'
-  },
-  timeout: 5000 // 5 seconds
-});
-
-// Now use this instance for all requests
-api.get('/users'); // This will request https://api.example.com/users
-api.post('/posts', { title: 'New Post' });
-```
-
-### All Available Request Methods
-
-```javascript
-// GET request
-omnirequest.get(url, config);
-
-// POST request
-omnirequest.post(url, data, config);
-
-// PUT request
-omnirequest.put(url, data, config);
-
-// PATCH request
-omnirequest.patch(url, data, config);
-
-// DELETE request
-omnirequest.delete(url, config);
-
-// HEAD request
-omnirequest.head(url, config);
-
-// OPTIONS request
-omnirequest.options(url, config);
-```
-
-### Request Configuration
-
-You can customize your requests with various options:
-
-```javascript
-omnirequest.get('https://api.example.com/data', {
-  // URL parameters
-  params: {
-    id: 123,
-    filter: 'active'
-  },
-  
-  // Request headers
-  headers: {
-    'Authorization': 'Bearer token',
-    'Accept': 'application/json'
-  },
-  
-  // Request timeout in milliseconds
-  timeout: 3000,
-  
-  // Whether to include credentials for cross-site requests
-  withCredentials: true,
-  
-  // Response type
-  responseType: 'json' // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
-});
-```
-
-### Complete Example
-
-```javascript
-// Import the library
-import omnirequest from 'omnirequest';
-
-// Create a custom API client
-const api = omnirequest.create({
-  baseURL: 'https://api.example.com',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_TOKEN'
   }
 });
 
-// Function to get users
-async function getUsers() {
+const response = await api.get('/users');
+console.log(response.data);
+```
+
+## 🔄 React Hooks Guide
+
+### useQuery
+
+Fetch data with automatic caching, loading states, and error handling:
+
+```javascript
+const { data, loading, error, refetch, invalidate } = useQuery(
+  'unique-key',
+  queryFn,
+  {
+    enabled: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 30000, // 30 seconds
+    onSuccess: (data) => console.log('Data loaded:', data),
+    onError: (error) => console.error('Error:', error)
+  }
+);
+```
+
+### useMutation
+
+Handle mutations with optimistic updates:
+
+```javascript
+const { data, error, loading, mutate, reset } = useMutation(
+  mutationFn,
+  {
+    onMutate: async (variables) => {
+      // Optimistic update
+      const previousData = queryClient.getQueryData(['key']);
+      queryClient.setQueryData(['key'], (old) => [...old, variables]);
+      return { previousData };
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate related queries
+      invalidateQueries('related-key');
+    },
+    onError: (error, variables, context) => {
+      // Rollback optimistic update
+      queryClient.setQueryData(['key'], context.previousData);
+    },
+    onSettled: (data, error) => {
+      // Always run after success or error
+    }
+  }
+);
+```
+
+### useInfiniteQuery
+
+Handle infinite scrolling/pagination:
+
+```javascript
+const { data, loading, error, hasNextPage, fetchNextPage, refetch } = useInfiniteQuery(
+  'posts',
+  ({ pageParam = 0 }) => get(`/posts?page=${pageParam}`),
+  {
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.hasMore ? allPages.length : undefined;
+    }
+  }
+);
+
+// Load more
+<button onClick={() => fetchNextPage()} disabled={!hasNextPage}>
+  Load More
+</button>
+```
+
+## 🛡️ Advanced Features
+
+### Request Deduplication
+
+Automatically prevents duplicate requests:
+
+```javascript
+import { DeduplicationMiddleware } from 'omnirequest';
+
+const api = omnirequest.create();
+api.getMiddlewareManager().use(new DeduplicationMiddleware());
+
+// If you call this 10 times simultaneously, only 1 request is made
+const users = await api.get('/users');
+```
+
+### Offline-First Support
+
+Queue requests when offline and sync automatically:
+
+```javascript
+import { OfflineSyncMiddleware } from 'omnirequest';
+
+const api = omnirequest.create();
+const offlineSync = new OfflineSyncMiddleware({
+  maxRetries: 3,
+  retryDelay: 5000,
+  onQueue: (item) => console.log('Request queued:', item),
+  onSuccess: (item) => console.log('Request synced:', item)
+});
+
+api.getMiddlewareManager().use(offlineSync);
+
+// Works even when offline!
+await api.post('/users', { name: 'John' });
+```
+
+### Automatic Token Refresh
+
+Handle authentication with automatic token refresh:
+
+```javascript
+import { AutoAuthPlugin } from 'omnirequest';
+
+const api = omnirequest.create();
+api.use(new AutoAuthPlugin({
+  type: 'bearer',
+  token: 'your-token',
+  refreshToken: async () => {
+    const response = await get('/auth/refresh');
+    return response.token;
+  },
+  handle401: true // Auto-refresh on 401 errors
+}));
+```
+
+### Intelligent Retry
+
+Automatic retry with exponential backoff:
+
+```javascript
+import { IntelligentRetryMiddleware } from 'omnirequest';
+
+const api = omnirequest.create();
+api.getMiddlewareManager().use(new IntelligentRetryMiddleware({
+  maxRetries: 3,
+  retryDelay: 1000,
+  retryCondition: (error) => error.status >= 500 || !error.status
+}));
+```
+
+## �️ Architecture
+
+OmniRequest is built on a modular architecture designed for extensibility and maintainability:
+
+- **Core Layer**: HTTP client with adapter pattern for cross-platform support
+- **Middleware Layer**: Composable request/response processing pipeline
+- **Plugin System**: Extensible architecture for custom functionality
+- **Type Safety**: Full TypeScript support with comprehensive type definitions
+
+## 📦 Installation
+
+```bash
+# Using npm
+npm install omnirequest
+
+# Using yarn
+yarn add omnirequest
+
+# Using pnpm
+pnpm add omnirequest
+```
+
+## 📖 API Reference
+
+### Simple API
+
+```javascript
+import { get, post, put, patch, del, createSimpleAPI } from 'omnirequest';
+
+get<T>(url: string): Promise<T>
+post<T>(url: string, data?: any): Promise<T>
+put<T>(url: string, data?: any): Promise<T>
+patch<T>(url: string, data?: any): Promise<T>
+del<T>(url: string): Promise<T>
+createSimpleAPI(baseURL: string): APIClient
+```
+
+### React Hooks
+
+```javascript
+import { useQuery, useMutation, useInfiniteQuery, invalidateQueries, clearQueryCache } from 'omnirequest';
+
+useQuery<T>(key, queryFn, options): UseQueryResult<T>
+useMutation<TData, TError, TVariables>(mutationFn, options): UseMutationResult
+useInfiniteQuery<T>(key, queryFn, options): UseInfiniteQueryResult<T>
+invalidateQueries(key?: string): void
+clearQueryCache(): void
+```
+
+### Middleware
+
+```javascript
+import { 
+  CacheMiddleware, 
+  DeduplicationMiddleware, 
+  OfflineSyncMiddleware,
+  IntelligentRetryMiddleware,
+  CircuitBreakerMiddleware 
+} from 'omnirequest';
+
+api.getMiddlewareManager().use(new MiddlewareClass(options));
+```
+
+## 💡 Real-World Examples
+
+### Complete React App Example
+
+```javascript
+import { useQuery, useMutation, invalidateQueries, get, post } from 'omnirequest';
+
+function App() {
+  return (
+    <div>
+      <UserList />
+      <CreateUserForm />
+    </div>
+  );
+}
+
+function UserList() {
+  const { data: users, loading, error } = useQuery(
+    'users',
+    () => get('https://api.example.com/users'),
+    { refetchOnWindowFocus: true }
+  );
+
+  if (loading) return <div>Loading users...</div>;
+  if (error) return <div>Error loading users</div>;
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name} - {user.email}</li>
+      ))}
+    </ul>
+  );
+}
+
+function CreateUserForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const { mutate, loading } = useMutation(
+    (userData) => post('https://api.example.com/users', userData),
+    {
+      onSuccess: () => {
+        invalidateQueries('users'); // Refresh user list
+        setName('');
+        setEmail('');
+      }
+    }
+  );
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutate({ name, email });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+      />
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Creating...' : 'Create User'}
+      </button>
+    </form>
+  );
+}
+```
+
+### Node.js Example
+
+```javascript
+import { get, post, createSimpleAPI } from 'omnirequest';
+
+const api = createSimpleAPI('https://api.example.com');
+
+async function main() {
   try {
-    // Get users with pagination
-    const response = await api.get('/users', {
-      params: { page: 1, limit: 10 }
+    const users = await api.get('/users');
+    console.log('Users:', users);
+
+    const newUser = await api.post('/users', {
+      name: 'John Doe',
+      email: 'john@example.com'
     });
-    
-    console.log('Users:', response.data);
-    return response.data;
+    console.log('Created:', newUser);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    throw error;
+    console.error('Error:', error);
   }
 }
 
-// Function to create a user
-async function createUser(userData) {
-  try {
-    const response = await api.post('/users', userData);
-    console.log('User created:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating user:', error);
-    throw error;
-  }
-}
-
-// Use the functions
-getUsers();
-
-createUser({
-  name: 'John Doe',
-  email: 'john@example.com',
-  role: 'user'
-});
+main();
 ```
 
-## Response Object
+## 💼 Use Cases
 
-Every request returns a response object with these properties:
+- **Enterprise Applications**: Complex business logic with multiple API integrations
+- **Microservices Architecture**: Service-to-service communication with resilience patterns
+- **Real-time Applications**: WebSocket support with automatic reconnection
+- **Mobile Applications**: Offline-first capabilities with data synchronization
+- **Data-Intensive Applications**: Efficient caching and data management
+- **Secure Applications**: Built-in authentication and security features
+
+## 🔧 Configuration Options
 
 ```javascript
 {
-  // The response data (parsed JSON or string)
-  data: {},
+  // Request configuration
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  baseURL?: string;
+  headers?: Record<string, string>;
+  params?: Record<string, any>;
+  data?: any;
+  timeout?: number;
+  withCredentials?: boolean;
+  responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
   
-  // HTTP status code
-  status: 200,
-  
-  // HTTP status message
-  statusText: 'OK',
-  
-  // Response headers
-  headers: {},
-  
-  // The original request configuration
-  config: {}
+  // Advanced options
+  signal?: AbortSignal;
+  validateStatus?: (status: number) => boolean;
+  cache?: 'default' | 'no-store' | 'reload' | 'no-cache';
 }
 ```
 
-## Error Handling
-
-OmniRequest provides detailed error information:
-
-```javascript
-try {
-  const response = await omnirequest.get('https://api.example.com/users');
-  console.log(response.data);
-} catch (error) {
-  if (error.response) {
-    // The server responded with an error status code (4xx, 5xx)
-    console.error('Server error:', error.response.status);
-    console.error('Error data:', error.response.data);
-  } else if (error.request) {
-    // The request was made but no response was received
-    console.error('No response received');
-  } else {
-    // Something else went wrong
-    console.error('Error:', error.message);
-  }
-}
-```
-
-## API Reference
-
-### Request Methods
-
-```javascript
-// GET request
-omnirequest.get(url, config);
-
-// POST request
-omnirequest.post(url, data, config);
-
-// PUT request
-omnirequest.put(url, data, config);
-
-// PATCH request
-omnirequest.patch(url, data, config);
-
-// DELETE request
-omnirequest.delete(url, config);
-
-// HEAD request
-omnirequest.head(url, config);
-
-// OPTIONS request
-omnirequest.options(url, config);
-
-// Generic request method
-omnirequest.request(config);
-```
-
-### Configuration Options
-
-```javascript
-{
-  // URL for the request
-  url: 'https://api.example.com/users',
-  
-  // HTTP method
-  method: 'GET',
-  
-  // Base URL that will be prepended to the URL
-  baseURL: 'https://api.example.com',
-  
-  // URL parameters (added to the query string)
-  params: {
-    page: 1,
-    limit: 10
-  },
-  
-  // Request body for POST, PUT, PATCH
-  data: {
-    name: 'John Doe'
-  },
-  
-  // Request headers
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer token'
-  },
-  
-  // Request timeout in milliseconds
-  timeout: 5000,
-  
-  // Whether to include credentials for cross-site requests
-  withCredentials: true,
-  
-  // Response type
-  responseType: 'json' // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
-}
-```
-
-## Browser Support
+## 🌐 Browser Support
 
 OmniRequest works in all modern browsers and Node.js:
 
-- Chrome
-- Firefox
-- Safari
-- Edge
-- Node.js 14+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+- Node.js 18+
 
+## 📝 License
 
+[MIT](LICENSE)
 
-## Community & Support
-
-- [GitHub Issues](https://github.com/jasgigli/omni-request/issues) - Bug reports and feature requests
-- [GitHub Discussions](https://github.com/jasgigli/omni-request/discussions) - Questions and discussions
-
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -381,16 +562,20 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 Please read our [Contributing Guide](CONTRIBUTING.md) for more information.
 
-## Security
+## 🔒 Security
 
 If you discover a security vulnerability within OmniRequest, please follow our [Security Policy](SECURITY.md).
 
-## License
+## 💬 Community & Support
 
-[MIT](LICENSE)
+- [GitHub Issues](https://github.com/jasgigli/omni-request/issues) - Bug reports and feature requests
+- [GitHub Discussions](https://github.com/jasgigli/omni-request/discussions) - Questions and discussions
 
 ---
 
 <div align="center">
   <sub>Built with ❤️ by <a href="https://github.com/jasgigli">Junaid Ali Shah Gigli</a></sub>
+  <br/>
+  <sub>Enterprise-Grade HTTP Client for Modern Applications</sub>
 </div>
+

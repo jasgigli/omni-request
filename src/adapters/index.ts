@@ -1,4 +1,5 @@
 import { browserAdapter } from "./browserAdapter";
+import { nodeAdapter } from "./nodeAdapter";
 import { Adapter } from "./adapter";
 
 // Function to detect the current environment and return appropriate adapter
@@ -7,9 +8,8 @@ export function getAdapter(): Adapter {
     return browserAdapter;
   }
 
-  // Add other environment checks and adapters here
-  // For now, default to browser adapter
-  return browserAdapter;
+  // Node.js environment
+  return nodeAdapter;
 }
 
-export { browserAdapter };
+export { browserAdapter, nodeAdapter };

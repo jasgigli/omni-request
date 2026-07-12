@@ -6,3 +6,5 @@ export * from './transform';
 export * from './revalidationCache';
 export * from './concurrencyRateLimit';
 export * from './intelligentRetry';
+export * from './deduplication';
+export * from './offlineSync';

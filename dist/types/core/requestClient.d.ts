@@ -2,10 +2,15 @@ import type { RequestConfig } from "../types/request";
 import type { ResponseData } from "../types/response";
 import type { Plugin } from "../types/plugin";
 import type { IMiddlewareManager } from "../types/middleware";
+import { InterceptorManager } from "./interceptorManager";
 export declare class RequestClient {
     private config;
     private middleware;
     private plugins;
+    interceptors: {
+        request: InterceptorManager<RequestConfig>;
+        response: InterceptorManager<ResponseData>;
+    };
     constructor(config?: Partial<RequestConfig>);
     request<T = any>(requestConfig?: Partial<RequestConfig>): Promise<ResponseData<T>>;
     use(plugin: Plugin): void;

@@ -3,6 +3,7 @@ import type { ResponseData } from "../types/response";
 import type { Plugin } from "../types/plugin";
 import type { IMiddlewareManager } from "../types/middleware";
 import { MiddlewareManager } from "./middleware/middlewareManager";
+import { InterceptorManager } from "./interceptorManager";
 import { getAdapter } from "../adapters";
 import { createDefaultConfig } from "./config";
 
@@ -10,11 +11,19 @@ export class RequestClient {
   private config: RequestConfig;
   private middleware: IMiddlewareManager;
   private plugins: Plugin[];
+  public interceptors: {
+    request: InterceptorManager<RequestConfig>;
+    response: InterceptorManager<ResponseData>;
+  };
 
   constructor(config: Partial<RequestConfig> = {}) {
     this.config = { ...createDefaultConfig(), ...config };
     this.middleware = new MiddlewareManager();
     this.plugins = [];
+    this.interceptors = {
+      request: new InterceptorManager<RequestConfig>(),
+      response: new InterceptorManager<ResponseData>()
+    };
   }
 
   async request<T = any>(
@@ -22,7 +31,21 @@ export class RequestClient {
   ): Promise<ResponseData<T>> {
     let finalConfig = { ...this.config, ...requestConfig };
 
+    // Combine baseURL with URL if URL is relative
+    if (finalConfig.url && finalConfig.baseURL && !finalConfig.url.startsWith('http')) {
+      const baseURL = finalConfig.baseURL.endsWith('/') 
+        ? finalConfig.baseURL.slice(0, -1) 
+        : finalConfig.baseURL;
+      const url = finalConfig.url.startsWith('/') 
+        ? finalConfig.url 
+        : `/${finalConfig.url}`;
+      finalConfig.url = `${baseURL}${url}`;
+    }
+
     try {
+      // Apply request interceptors
+      finalConfig = await this.interceptors.request.apply(finalConfig);
+
       // Apply plugins pre-request
       for (const plugin of this.plugins) {
         if (plugin.onRequest) {
@@ -44,6 +67,9 @@ export class RequestClient {
       // Apply middleware post-response
       response = await this.middleware.applyResponseMiddleware(response);
 
+      // Apply response interceptors
+      response = await this.interceptors.response.apply(response);
+
       // Apply plugins post-response
       for (const plugin of this.plugins) {
         if (plugin.onResponse) {
@@ -55,6 +81,21 @@ export class RequestClient {
 
       return response;
     } catch (error) {
+      // Apply response interceptors to errors
+      try {
+        await this.interceptors.response.apply(error);
+      } catch (e) {
+        // Ignore interceptor errors
+      }
+      
+      // Handle retry if middleware indicated retry
+      if (error._retry && error._retry.count <= error._retry.maxRetries) {
+        return this.request<T>({
+          ...finalConfig,
+          _retryCount: error._retry.count
+        });
+      }
+      
       throw error;
     }
   }

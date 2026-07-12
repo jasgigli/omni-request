@@ -27,4 +27,16 @@ export class InterceptorManager<T> {
       }
     });
   }
+
+  async apply(value: T): Promise<T> {
+    let result = value;
+    
+    for (const interceptor of this.interceptors) {
+      if (interceptor !== null) {
+        result = await interceptor.resolved(result);
+      }
+    }
+    
+    return result;
+  }
 }
